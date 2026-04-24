@@ -1,0 +1,24 @@
+# Code Owners
+
+# Default owner for everything
+* @default-reviewer
+
+# Backend
+/src/backend/ @backend-team
+/src/controllers/ @backend-team
+/src/routes/ @backend-team
+/src/services/ @backend-team
+
+# Frontend
+/public/ @frontend-team
+
+# Database
+/src/db/ @database-team
+
+# DevOps
+/.github/ @devops-team
+Dockerfile
+docker-compose.yml
+
+# Testing
+/src/**/*.test.ts @testing-team
