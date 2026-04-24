@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HorizonView &#8212; Airline Management</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body x-data="app()" x-init="init()">
+
+  <!-- ── Toast Notifications ───────────────────────── -->
+  <div class="toast-container" aria-live="polite">
+    <template x-for="(t, i) in toasts" :key="i">
+      <div class="toast" :class="`toast-${t.type}`" x-text="t.message"></div>
+    </template>
+  </div>
+
+  <!-- ── Seat Map Modal ────────────────────────────── -->
+  <div class="modal-overlay" x-show="seatModal.open" x-transition.opacity @click.self="closeSeatModal()" style="display:none">
+    <div class="modal" @click.stop>
+      <div class="modal-header">
+        <div>
+          <h3 x-text="t('seat.selectTitle')"></h3>
+          <p class="modal-subtitle" x-show="seatModal.flight"
+             x-text="seatModal.flight ? `${seatModal.flight.departure} \u2192 ${seatModal.flight.arrival}  \u00b7  ${seatModal.flight.flight_number}  \u00b7  ${formatDate(seatModal.flight.scheduled_time)}` : ''"></p>
+        </div>
+        <button class="modal-close" @click="closeSeatModal()" aria-label="Close">&#10005;</button>
+      </div>
+
+      <!-- ── Weather Panel (Weatherstack) ── -->
+      <div class="weather-panel" x-show="seatModal.weather.loading || seatModal.weather.departure || seatModal.weather.arrival">
+        <template x-if="seatModal.weather.loading">
+          <div class="weather-loading" x-text="t('weather.loading')"></div>
+        </template>
+        <template x-if="!seatModal.weather.loading">
+          <div class="weather-cards">
+            <div class="weather-card">
+              <h4 x-text="t('weather.departure') + ' (' + (seatModal.flight?.departure || '') + ')'"></h4>
+              <template x-if="seatModal.weather.departure">
+                <div>
+                  <div class="weather-temp" x-text="seatModal.weather.departure.temperature + '\u00b0C'"></div>
+                  <div class="weather-desc" x-text="seatModal.weather.departure.description"></div>
+                  <div class="weather-details">
+                    <span x-text="t('weather.wind') + ': ' + seatModal.weather.departure.wind_speed + ' km/h'"></span>
+                    <span x-text="t('weather.humidity') + ': ' + seatModal.weather.departure.humidity + '%'"></span>
+                    <span x-text="t('weather.feelsLike') + ': ' + seatModal.weather.departure.feelslike + '\u00b0C'"></span>
+                  </div>
+                </div>
+              </template>
+              <template x-if="!seatModal.weather.departure">
+                <div class="weather-na" x-text="t('weather.unavailable')"></div>
+              </template>
+            </div>
+            <div class="weather-card">
+              <h4 x-text="t('weather.arrival') + ' (' + (seatModal.flight?.arrival || '') + ')'"></h4>
+              <template x-if="seatModal.weather.arrival">
+                <div>
+                  <div class="weather-temp" x-text="seatModal.weather.arrival.temperature + '\u00b0C'"></div>
+                  <div class="weather-desc" x-text="seatModal.weather.arrival.description"></div>
+                  <div class="weather-details">
+                    <span x-text="t('weather.wind') + ': ' + seatModal.weather.arrival.wind_speed + ' km/h'"></span>
+                    <span x-text="t('weather.humidity') + ': ' + seatModal.weather.arrival.humidity + '%'"></span>
+                    <span x-text="t('weather.feelsLike') + ': ' + seatModal.weather.arrival.feelslike + '\u00b0C'"></span>
+                  </div>
+                </div>
+              </template>
+              <template x-if="!seatModal.weather.arrival">
+                <div class="weather-na" x-text="t('weather.unavailable')"></div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="modal-body">
+        <div class="seat-legend">
+          <span class="legend-item"><span class="legend-dot available"></span> <span x-text="t('seat.available')"></span></span>
+          <span class="legend-item"><span class="legend-dot reserved"></span> <span x-text="t('seat.reserved')"></span></span>
+          <span class="legend-item"><span class="legend-dot selected"></span> <span x-text="t('seat.selected')"></span></span>
+        </div>
+
+        <template x-if="seatModal.loading">
+          <div>
+            <div class="loading-skeleton"></div>
+            <div class="loading-skeleton"></div>
+          </div>
+        </template>
+
+        <template x-if="!seatModal.loading">
+          <div>
+            <template x-for="cls in ['business','normal','economy']" :key="cls">
+              <div class="seat-class-section" x-show="seatModal.seats.filter(s => s.class === cls).length > 0">
+                <div class="seat-class-label">
+                  <span x-text="cls.charAt(0).toUpperCase() + cls.slice(1)"></span>
+                  <span class="seat-class-count" x-text="seatCountFor(cls)"></span>
+                </div>
+                <div class="seat-grid">
+                  <template x-for="seat in seatModal.seats.filter(s => s.class === cls)" :key="seat.number">
+                    <button
+                      class="seat"
+                      :class="{
+                        'seat-available': seat.status === 'available' && seatModal.selectedSeat?.number !== seat.number,
+                        'seat-reserved':  seat.status === 'reserved',
+                        'seat-selected':  seatModal.selectedSeat?.number === seat.number
+                      }"
+                      :disabled="seat.status === 'reserved'"
+                      @click="selectSeat(seat)"
+                      :aria-label="`Seat ${seat.number} \u2014 ${seat.class} \u2014 ${formatPrice(seat.price)} \u2014 ${seat.status}`"
+                      x-text="seat.number">
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      <div class="modal-footer" x-show="seatModal.selectedSeat" style="display:none">
+        <div class="booking-summary">
+          <div>Seat <strong x-text="seatModal.selectedSeat?.number"></strong></div>
+          <div>Class <strong x-text="seatModal.selectedSeat?.class"></strong></div>
+          <div>Price <strong x-text="formatPrice(seatModal.selectedSeat?.price)"></strong></div>
+        </div>
+        <button @click="confirmBooking()"
+                :disabled="seatModal.confirming"
+                x-text="seatModal.confirming ? t('seat.booking') : t('seat.confirmBooking')"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Profile Modal ─────────────────────────────── -->
+  <div class="modal-overlay" x-show="profileOpen" x-transition.opacity @click.self="profileOpen = false" style="display:none">
+    <div class="modal modal-sm" @click.stop>
+      <div class="modal-header">
+        <h3 x-text="t('profile.title')"></h3>
+        <button class="modal-close" @click="profileOpen = false" aria-label="Close">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label x-text="t('auth.fullName')"></label>
+          <input type="text" x-model="profileForm.name" autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label x-text="t('auth.email')"></label>
+          <input type="email" x-model="profileForm.email" autocomplete="email">
+        </div>
+        <div class="profile-divider" x-text="t('profile.changePassword')"></div>
+        <div class="form-group">
+          <label x-text="t('profile.currentPassword')"></label>
+          <input type="password" x-model="profileForm.currentPassword" autocomplete="current-password" placeholder="">
+        </div>
+        <div class="form-group">
+          <label x-text="t('profile.newPassword')"></label>
+          <input type="password" x-model="profileForm.newPassword" autocomplete="new-password" placeholder="">
+        </div>
+        <div class="form-group">
+          <label x-text="t('profile.confirmPassword')"></label>
+          <input type="password" x-model="profileForm.confirmPassword" autocomplete="new-password">
+        </div>
+        <p class="error" x-text="profileError"></p>
+      </div>
+      <div class="modal-footer">
+        <button @click="saveProfile()" :disabled="profileLoading"
+                x-text="profileLoading ? t('profile.saving') : t('profile.save')"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Header ─────────────────────────────────────── -->
+  <header>
+    <nav class="navbar">
+      <a href="/" class="nav-brand">
+        <span class="brand-icon">&#9992;</span>
+        <span class="brand-text">HorizonView</span>
+      </a>
+
+      <button class="nav-toggle" @click="navOpen = !navOpen" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+
+      <div class="nav-menu" :class="{ 'nav-open': navOpen }">
+        <div class="nav-links">
+          <a href="#flights" class="nav-link" @click="navOpen = false" x-text="t('nav.flights')"></a>
+          <template x-if="user && user.role !== 'visitor'">
+            <a href="#reservations" class="nav-link" @click="navOpen = false" x-text="t('nav.reservations')"></a>
+          </template>
+          <template x-if="user && (user.role === 'manager' || user.role === 'admin')">
+            <a href="#manage" class="nav-link" @click="navOpen = false" x-text="t('nav.manage')"></a>
+          </template>
+          <template x-if="user && user.role === 'admin'">
+            <a href="#users" class="nav-link" @click="navOpen = false" x-text="t('nav.users')"></a>
+          </template>
+        </div>
+
+        <!-- ── Language & Currency Controls ── -->
+        <div class="nav-tools">
+          <button class="lang-toggle" @click="toggleLang()" x-text="lang === 'en' ? 'EL' : 'EN'" :title="lang === 'en' ? 'Switch to Greek' : 'Switch to English'"></button>
+          <select class="currency-select" x-model="selectedCurrency" :aria-label="t('currency.label')">
+            <option value="EUR">EUR (&euro;)</option>
+            <option value="USD">USD ($)</option>
+            <option value="GBP">GBP (&pound;)</option>
+          </select>
+        </div>
+
+        <div class="nav-auth">
+          <template x-if="user">
+            <div class="user-menu">
+              <div class="user-info">
+                <button class="user-name-btn" @click="openProfile()" :title="'Edit profile for ' + user.name">
+                  <span class="user-name" x-text="user.name"></span>
+                  <span class="user-role" x-text="user.role"></span>
+                </button>
+              </div>
+              <button class="btn-logout" @click="logout()" x-text="t('auth.logout')"></button>
+            </div>
+          </template>
+          <template x-if="!user">
+            <div class="auth-buttons">
+              <button class="btn-login"    @click="showAuth('login');    navOpen = false" x-text="t('auth.login')"></button>
+              <button class="btn-register" @click="showAuth('register'); navOpen = false" x-text="t('auth.register')"></button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ── Hero ──────────────────────────────────────── -->
+    <template x-if="!user && !authFormVisible">
+      <section class="hero">
+        <div class="hero-eyebrow">&#9992; Airline Management Platform</div>
+        <h1 x-text="t('hero.title')"></h1>
+        <p x-text="t('hero.subtitle')"></p>
+        <div class="hero-actions">
+          <button @click="showAuth('register')" x-text="t('hero.getStarted')"></button>
+          <button class="btn-secondary" @click="showAuth('login')" x-text="t('hero.signIn')"></button>
+        </div>
+      </section>
+    </template>
+
+    <!-- ── Auth Form ──────────────────────────────────── -->
+    <template x-if="authFormVisible">
+      <section class="auth-form">
+        <h2 x-text="authType === 'login' ? t('auth.welcomeBack') : t('auth.createAccount')"></h2>
+        <form @submit.prevent="handleAuth()">
+          <div class="form-group">
+            <label x-text="t('auth.username')"></label>
+            <input type="text" x-model="authForm.username" autocomplete="username" required aria-required="true">
+          </div>
+          <div class="form-group">
+            <label x-text="t('auth.password')"></label>
+            <input type="password" x-model="authForm.password" autocomplete="current-password" required aria-required="true">
+          </div>
+          <template x-if="authType === 'register'">
+            <div>
+              <div class="form-group">
+                <label x-text="t('auth.fullName')"></label>
+                <input type="text" x-model="authForm.name" autocomplete="name" required aria-required="true">
+              </div>
+              <div class="form-group">
+                <label x-text="t('auth.email')"></label>
+                <input type="email" x-model="authForm.email" autocomplete="email" required aria-required="true">
+              </div>
+              <div class="form-group">
+                <label x-text="t('auth.phone')"></label>
+                <input type="tel" x-model="authForm.phone" autocomplete="tel" placeholder="+30 210 1234567">
+              </div>
+            </div>
+          </template>
+          <button type="submit" :disabled="authLoading"
+                  x-text="authLoading ? t('auth.pleaseWait') : (authType === 'login' ? t('auth.login') : t('auth.register'))"></button>
+          <p class="error" x-text="authError"></p>
+        </form>
+        <p class="auth-switch">
+          <template x-if="authType === 'login'">
+            <span><span x-text="t('auth.noAccount')"></span> <button @click="authType='register'; authError=''" x-text="t('auth.registerHere')"></button></span>
+          </template>
+          <template x-if="authType === 'register'">
+            <span><span x-text="t('auth.haveAccount')"></span> <button @click="authType='login'; authError=''" x-text="t('auth.loginHere')"></button></span>
+          </template>
+        </p>
+      </section>
+    </template>
+
+    <!-- ── Flight Search ──────────────────────────────── -->
+    <section class="flights-search" id="flights">
+      <h2 x-text="t('flights.find')"></h2>
+      <form @submit.prevent="searchFlights()">
+        <div class="form-row">
+          <div class="form-group">
+            <label x-text="t('flights.from')"></label>
+            <input type="text" x-model="filters.from" placeholder="ATH" maxlength="3" style="text-transform:uppercase">
+          </div>
+          <div class="form-group">
+            <label x-text="t('flights.to')"></label>
+            <input type="text" x-model="filters.to" placeholder="LHR" maxlength="3" style="text-transform:uppercase">
+          </div>
+          <div class="form-group">
+            <label x-text="t('flights.date')"></label>
+            <input type="date" x-model="filters.date">
+          </div>
+          <button type="submit" :disabled="flightsLoading">
+            <span x-text="flightsLoading ? t('flights.searching') : t('flights.search')"></span>
+          </button>
+          <button type="button" class="btn-secondary" @click="filters={from:'',to:'',date:''}; searchFlights()" x-text="t('flights.clear')"></button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ── Flights List ───────────────────────────────── -->
+    <section class="flights-list">
+      <div class="section-header">
+        <h2>
+          <span x-text="user && (user.role === 'manager' || user.role === 'admin') ? t('flights.all') : t('flights.available')"></span>
+          <span class="total-badge" x-show="pagination.total > 0" x-text="`${pagination.total} ${t('flights.found')}`"></span>
+        </h2>
+      </div>
+
+      <template x-if="flightsLoading">
+        <div>
+          <div class="loading-skeleton"></div>
+          <div class="loading-skeleton"></div>
+          <div class="loading-skeleton"></div>
+        </div>
+      </template>
+
+      <template x-if="!flightsLoading && flights.length === 0">
+        <div class="empty-state">
+          <div class="empty-icon">&#9992;</div>
+          <p x-text="t('flights.noFlights')"></p>
+        </div>
+      </template>
+
+      <template x-for="flight in flights" :key="flight.id">
+        <div class="flight-card">
+          <div class="flight-route">
+            <span class="airport" x-text="flight.departure"></span>
+            <span class="flight-arrow">
+              <span class="arrow-line"></span>
+              <span class="arrow-plane">&#9992;</span>
+            </span>
+            <span class="airport" x-text="flight.arrival"></span>
+          </div>
+          <div class="flight-details">
+            <span class="flight-number" x-text="flight.flight_number"></span>
+            <span x-text="formatDate(flight.scheduled_time)"></span>
+            <span class="seats-chip"
+                  :class="flight.available_seats === 0 ? 'seats-full' : 'seats-open'"
+                  x-text="flight.available_seats === 0 ? t('flights.full') : `${flight.available_seats} ${t('flights.seatsLeft')}`"></span>
+            <span class="state" :class="`state-${flight.state}`" x-text="flight.state"></span>
+          </div>
+          <template x-if="user && user.role === 'customer' && flight.state === 'created' && flight.available_seats > 0">
+            <button @click="openSeatMap(flight)" class="btn-book" x-text="t('flights.book')"></button>
+          </template>
+          <template x-if="!user && flight.state === 'created'">
+            <button class="btn-book btn-secondary" @click="showAuth('login')" x-text="t('flights.loginToBook')"></button>
+          </template>
+        </div>
+      </template>
+
+      <!-- Pagination -->
+      <div class="pagination" x-show="pagination.pages > 1">
+        <button class="btn-secondary" @click="loadFlights(pagination.page - 1)"
+                :disabled="pagination.page <= 1" x-text="t('common.prev')"></button>
+        <span class="page-info" x-text="`${t('common.page')} ${pagination.page} ${t('common.of')} ${pagination.pages}`"></span>
+        <button class="btn-secondary" @click="loadFlights(pagination.page + 1)"
+                :disabled="pagination.page >= pagination.pages" x-text="t('common.next')"></button>
+      </div>
+    </section>
+
+    <!-- ── My Reservations ────────────────────────────── -->
+    <template x-if="user && user.role !== 'visitor'">
+      <section class="reservations" id="reservations">
+        <div class="section-header">
+          <h2 x-text="t('reservations.title')"></h2>
+          <span class="total-badge" x-show="reservations.length > 0" x-text="`${reservations.length} ${t('reservations.total')}`"></span>
+        </div>
+
+        <template x-if="reservations.length === 0">
+          <div class="empty-state">
+            <div class="empty-icon">&#127915;</div>
+            <p x-text="t('reservations.none')"></p>
+          </div>
+        </template>
+
+        <template x-for="res in reservations" :key="res.id">
+          <div class="reservation-card" :class="res.status === 'cancelled' ? 'res-cancelled' : ''">
+            <div class="reservation-main">
+              <div class="res-route">
+                <strong x-text="res.flight_number"></strong>
+                <span x-text="`${res.departure} \u2192 ${res.arrival}`"></span>
+              </div>
+              <span class="res-date" x-text="formatDate(res.scheduled_time)"></span>
+            </div>
+            <div class="reservation-details">
+              <span class="res-seat">Seat <strong x-text="res.seat_number"></strong></span>
+              <span class="state" :class="`state-${res.ticket_type}`" x-text="res.ticket_type"></span>
+              <span class="res-price" x-text="formatPrice(res.price)"></span>
+              <span class="status" :class="`status-${res.status}`" x-text="res.status"></span>
+            </div>
+            <template x-if="res.status === 'confirmed'">
+              <button class="btn-danger btn-sm" @click="cancelReservation(res.id)" x-text="t('reservations.cancel')"></button>
+            </template>
+          </div>
+        </template>
+      </section>
+    </template>
+
+    <!-- ── Manager Panel ──────────────────────────────── -->
+    <template x-if="user && (user.role === 'manager' || user.role === 'admin')">
+      <section class="manager-section" id="manage">
+        <h2 x-text="t('manager.title')"></h2>
+
+        <!-- Create Flight -->
+        <div class="manager-card">
+          <h3 x-text="t('manager.createTitle')"></h3>
+          <form @submit.prevent="createFlight()">
+            <div class="form-grid">
+              <div class="form-group">
+                <label x-text="t('manager.flightNumber')"></label>
+                <input type="text" x-model="createFlightForm.flight_number" placeholder="HV-001" maxlength="10" required>
+              </div>
+              <div class="form-group">
+                <label x-text="t('flights.from')"></label>
+                <input type="text" x-model="createFlightForm.departure" placeholder="ATH" maxlength="3" required>
+              </div>
+              <div class="form-group">
+                <label x-text="t('flights.to')"></label>
+                <input type="text" x-model="createFlightForm.arrival" placeholder="LHR" maxlength="3" required>
+              </div>
+              <div class="form-group">
+                <label x-text="t('manager.scheduledTime')"></label>
+                <input type="datetime-local" x-model="createFlightForm.scheduled_time" required>
+              </div>
+              <div class="form-group">
+                <label x-text="t('manager.totalSeats')"></label>
+                <input type="number" x-model.number="createFlightForm.total_seats" min="30" max="300" required>
+              </div>
+            </div>
+
+            <!-- ── Airport Congestion Check (Aviationstack) ── -->
+            <div class="airport-check-row">
+              <button type="button" class="btn-secondary btn-sm" @click="checkAirportStatus()" :disabled="airportStatusLoading"
+                      x-text="airportStatusLoading ? t('manager.checking') : t('manager.checkAirports')"></button>
+
+              <div class="airport-status-row" x-show="airportStatus.departure || airportStatus.arrival">
+                <template x-if="airportStatus.departure">
+                  <span class="airport-badge" :class="'airport-' + airportStatus.departure.status">
+                    <span x-text="createFlightForm.departure.toUpperCase()"></span>:
+                    <strong x-text="airportStatus.departure.status === 'busy' ? t('manager.airportBusy') : (airportStatus.departure.status === 'free' ? t('manager.airportFree') : '?')"></strong>
+                    <span x-text="'(' + airportStatus.departure.flightCount + ' flights)'"></span>
+                  </span>
+                </template>
+                <template x-if="airportStatus.arrival">
+                  <span class="airport-badge" :class="'airport-' + airportStatus.arrival.status">
+                    <span x-text="createFlightForm.arrival.toUpperCase()"></span>:
+                    <strong x-text="airportStatus.arrival.status === 'busy' ? t('manager.airportBusy') : (airportStatus.arrival.status === 'free' ? t('manager.airportFree') : '?')"></strong>
+                    <span x-text="'(' + airportStatus.arrival.flightCount + ' flights)'"></span>
+                  </span>
+                </template>
+              </div>
+            </div>
+
+            <button type="submit" :disabled="createFlightLoading"
+                    x-text="createFlightLoading ? t('manager.creating') : t('manager.createFlight')"></button>
+          </form>
+        </div>
+
+        <!-- Manage Existing Flights -->
+        <div class="manager-card">
+          <h3 x-text="t('manager.manageFlights')"></h3>
+          <template x-if="flights.length === 0">
+            <div class="empty-state"><p x-text="t('manager.noFlights')"></p></div>
+          </template>
+          <template x-for="flight in flights" :key="flight.id">
+            <div class="manager-flight-row">
+              <div class="flight-info">
+                <strong x-text="flight.flight_number"></strong>
+                <span x-text="`${flight.departure} \u2192 ${flight.arrival}`"></span>
+                <span x-text="formatDate(flight.scheduled_time)"></span>
+                <span class="seats-chip"
+                      :class="flight.available_seats === 0 ? 'seats-full' : 'seats-open'"
+                      x-text="`${flight.available_seats ?? '?'} / ${flight.total_seats} seats`"></span>
+                <span class="state" :class="`state-${flight.state}`" x-text="flight.state"></span>
+              </div>
+              <div class="flight-actions">
+                <template x-if="flight.state === 'created'">
+                  <button @click="updateFlightState(flight.id, 'staffed')">Staffed</button>
+                </template>
+                <template x-if="flight.state === 'staffed'">
+                  <button @click="updateFlightState(flight.id, 'completed')">Complete</button>
+                </template>
+                <template x-if="flight.state !== 'completed' && flight.state !== 'cancelled'">
+                  <button class="btn-danger" @click="updateFlightState(flight.id, 'cancelled')">Cancel</button>
+                </template>
+                <template x-if="flight.state === 'created'">
+                  <button class="btn-secondary" @click="deleteFlight(flight.id)">Delete</button>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </section>
+    </template>
+
+    <!-- ── Admin — User Management ───────────────────── -->
+    <template x-if="user && user.role === 'admin'">
+      <section class="admin-section" id="users">
+        <div class="section-header">
+          <h2 x-text="t('admin.title')"></h2>
+          <span class="total-badge" x-show="userPagination.total > 0"
+                x-text="`${userPagination.total} users`"></span>
+        </div>
+
+        <!-- Stats -->
+        <div class="admin-stats">
+          <div class="stat-card stat-total">
+            <div class="stat-number" x-text="userPagination.total || 0"></div>
+            <div class="stat-label">Total Users</div>
+          </div>
+          <div class="stat-card stat-admin">
+            <div class="stat-number" x-text="users.filter(u => u.role === 'admin').length"></div>
+            <div class="stat-label">Admins</div>
+          </div>
+          <div class="stat-card stat-manager">
+            <div class="stat-number" x-text="users.filter(u => u.role === 'manager').length"></div>
+            <div class="stat-label">Managers</div>
+          </div>
+          <div class="stat-card stat-customer">
+            <div class="stat-number" x-text="users.filter(u => u.role === 'customer').length"></div>
+            <div class="stat-label">Customers</div>
+          </div>
+          <div class="stat-card stat-visitor">
+            <div class="stat-number" x-text="users.filter(u => u.role === 'visitor').length"></div>
+            <div class="stat-label">Visitors</div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="admin-card">
+          <div class="form-row">
+            <div class="form-group">
+              <label x-text="t('admin.filterRole')"></label>
+              <select x-model="userFilters.role" @change="loadUsers(1)">
+                <option value="" x-text="t('admin.allRoles')"></option>
+                <option value="visitor">Visitor</option>
+                <option value="customer">Customer</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <button class="btn-secondary" @click="loadUsers(1)" :disabled="usersLoading">
+              <span x-text="usersLoading ? t('admin.loading') : t('admin.refresh')"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- User List -->
+        <div class="admin-card">
+          <template x-if="usersLoading">
+            <div>
+              <div class="loading-skeleton"></div>
+              <div class="loading-skeleton"></div>
+            </div>
+          </template>
+
+          <template x-if="!usersLoading && users.length === 0">
+            <div class="empty-state"><p x-text="t('admin.noUsers')"></p></div>
+          </template>
+
+          <template x-for="u in users" :key="u.id">
+            <div class="user-row" :class="u.id === user.id ? 'user-row-self' : ''">
+              <div class="user-row-info">
+                <div class="user-row-primary">
+                  <strong x-text="u.username"></strong>
+                  <span class="user-badge" :class="`role-${u.role}`" x-text="u.role"></span>
+                  <span x-show="u.id === user.id" class="self-badge">You</span>
+                </div>
+                <div class="user-row-secondary">
+                  <span x-text="u.name"></span>
+                  <span x-text="u.email"></span>
+                  <span x-show="u.last_login" x-text="`Last login: ${formatDate(u.last_login)}`"></span>
+                </div>
+              </div>
+              <div class="user-row-actions" x-show="u.id !== user.id">
+                <select x-model="roleChangeTo[u.id]">
+                  <option value="visitor">Visitor</option>
+                  <option value="customer">Customer</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <button @click="changeUserRole(u.id)"
+                        :disabled="roleChangeTo[u.id] === u.role" x-text="t('admin.apply')"></button>
+              </div>
+            </div>
+          </template>
+
+          <!-- User Pagination -->
+          <div class="pagination" x-show="userPagination.pages > 1">
+            <button class="btn-secondary" @click="loadUsers(userFilters.page - 1)"
+                    :disabled="userFilters.page <= 1" x-text="t('common.prev')"></button>
+            <span class="page-info" x-text="`${t('common.page')} ${userFilters.page} ${t('common.of')} ${userPagination.pages}`"></span>
+            <button class="btn-secondary" @click="loadUsers(userFilters.page + 1)"
+                    :disabled="userFilters.page >= userPagination.pages" x-text="t('common.next')"></button>
+          </div>
+        </div>
+      </section>
+    </template>
+
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span class="footer-brand">&#9992; HorizonView</span>
+      <p x-text="t('footer.copyright')"></p>
+    </div>
+  </footer>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
