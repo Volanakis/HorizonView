@@ -156,6 +156,7 @@ async function seed() {
   console.log('    manager  / Manager123!');
   console.log('    customer / Customer123!');
   console.log('    visitor  / Visitor123!');
+  console.log('    volanakis / Admin123!');
 }
 
-seed().catch(console.error);
+export { seed };
