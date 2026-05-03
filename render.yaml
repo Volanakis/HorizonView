@@ -13,4 +13,3 @@ services:
       - key: JWT_SECRET
         generateValue: true
     healthCheckPath: /api/health
-    nodeVersion: 24.x
