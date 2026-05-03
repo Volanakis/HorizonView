@@ -1347,3 +1347,18 @@ footer p { color: var(--gray-500); font-size: .875rem; }
   background: linear-gradient(90deg, transparent, rgba(196,84,40,.25), transparent);
   margin: 2rem 0;
 }
+
+@media (max-width: 480px) {
+  .hero h1 { font-size: 1.5rem; }
+  .hero p { font-size: .9rem; }
+  .flight-card { padding: .875rem 1rem; }
+  .seat { width: 42px; height: 42px; font-size: .68rem; }
+  .modal { width: 98%; padding: 0; }
+  .modal-header { padding: 1rem; }
+  .modal-body { padding: 1rem; }
+  .modal-footer { padding: 1rem; }
+  .admin-stats { grid-template-columns: 1fr; }
+  .stat-card { padding: 1rem; }
+  .weather-card { min-width: 100%; }
+  .airport-status-row { flex-direction: column; }
+}
