@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: horizonview
+    env: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: sqlite://./horizonview.db
+      - key: JWT_SECRET
+        generateValue: true
+    healthCheckPath: /api/health
+    nodeVersion: 24.x
