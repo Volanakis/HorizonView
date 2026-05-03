@@ -8,7 +8,6 @@ const PORT = process.env.PORT || 3000;
 
 async function start() {
   try {
-    await db.init();
     console.log('Database initialized');
 
     const server = app.listen(PORT, () => {

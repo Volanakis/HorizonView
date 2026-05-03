@@ -1,10 +1,9 @@
-import initSqlJs from 'sql.js';
+import Database from 'better-sqlite3';
 import dotenv from 'dotenv';
-import fs from 'fs';
 
 dotenv.config();
 
-const dbPath = (process.env.DATABASE_URL || './horizonview.db').replace(/^sqlite:\/\//, '');
+const dbPath = (process.env.DATABASE_URL || 'sqlite://./horizonview.db').replace(/^sqlite:\/\//, '');
 
 const greekAirports = [
   { code: 'ATH', name: 'Athens' },
@@ -42,35 +41,27 @@ const flightsWithinGreece = [
   { number: 'HV120', departure: 'EFL', arrival: 'ATH' }
 ];
 
-async function seedFlights() {
+function seedFlights() {
   console.log('Seeding flights within Greece...\n');
 
-  const SQL = await initSqlJs();
-  let db: any;
+  const db = new Database(dbPath);
 
-  if (fs.existsSync(dbPath)) {
-    const buffer = fs.readFileSync(dbPath);
-    db = new SQL.Database(buffer);
-  } else {
-    console.error('Database not found. Run npm run migrate first.');
-    process.exit(1);
-  }
-
-  const managerStmt = db.prepare("SELECT id FROM users WHERE username = 'manager'");
-  managerStmt.bind();
-  let managerId = 0;
-  if (managerStmt.step()) {
-    managerId = managerStmt.getAsObject().id as number;
-  }
-  managerStmt.free();
-
-  if (!managerId) {
+  const managerRow = db.prepare("SELECT id FROM users WHERE username = 'manager'").get() as { id: number } | undefined;
+  if (!managerRow) {
     console.error('Manager user not found. Run npm run seed first.');
     process.exit(1);
   }
+  const managerId = managerRow.id;
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() + 1);
+
+  const insertFlight = db.prepare(
+    `INSERT INTO flights (flight_number, departure, arrival, scheduled_time, total_seats, created_by, state) VALUES (?, ?, ?, ?, ?, ?, 'created')`
+  );
+  const insertSeat = db.prepare(
+    `INSERT INTO seats (flight_id, seat_number, class, price, is_available) VALUES (?, ?, ?, ?, 1)`
+  );
 
   for (let i = 0; i < flightsWithinGreece.length; i++) {
     const flight = flightsWithinGreece[i];
@@ -78,20 +69,11 @@ async function seedFlights() {
     scheduledDate.setHours(6 + (i * 2), 0, 0, 0);
 
     try {
-      db.run(
-        `INSERT INTO flights (flight_number, departure, arrival, scheduled_time, total_seats, created_by, state) VALUES (?, ?, ?, ?, ?, ?, 'created')`,
-        [flight.number, flight.departure, flight.arrival, scheduledDate.toISOString(), 180, managerId]
+      const result = insertFlight.run(
+        flight.number, flight.departure, flight.arrival,
+        scheduledDate.toISOString(), 180, managerId
       );
-
-      const flightStmt = db.prepare('SELECT id FROM flights WHERE flight_number = ?');
-      flightStmt.bind([flight.number]);
-      let flightId = 0;
-      if (flightStmt.step()) {
-        flightId = flightStmt.getAsObject().id as number;
-      }
-      flightStmt.free();
-
-      if (!flightId) continue;
+      const flightId = Number(result.lastInsertRowid);
 
       const businessRows = 5;
       const normalRows = 10;
@@ -116,11 +98,7 @@ async function seedFlights() {
             price = 150;
           }
 
-          const seatNumber = `${row}${String.fromCharCode(64 + col)}`;
-          db.run(
-            `INSERT INTO seats (flight_id, seat_number, class, price, is_available) VALUES (?, ?, ?, ?, 1)`,
-            [flightId, seatNumber, classType, price]
-          );
+          insertSeat.run(flightId, `${row}${String.fromCharCode(64 + col)}`, classType, price);
           seatNum++;
         }
       }
@@ -137,11 +115,8 @@ async function seedFlights() {
     }
   }
 
-  const data = db.export();
-  fs.writeFileSync(dbPath, Buffer.from(data));
   db.close();
-
   console.log('\n✅ Done! 20 flights seeded within Greece.');
 }
 
-seedFlights().catch(console.error);
+seedFlights();

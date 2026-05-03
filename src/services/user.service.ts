@@ -68,7 +68,7 @@ export const userService = {
       `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES (?, 'ROLE_CHANGE', 'user', ?)`,
       [actorId, id]
     );
-    database.save();
+
     return { success: true };
   },
 
@@ -118,7 +118,7 @@ export const userService = {
       }
     }
 
-    database.save();
+
     return { created, skipped, errors };
   }
 };

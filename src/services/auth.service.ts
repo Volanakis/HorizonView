@@ -43,8 +43,6 @@ export const authService = {
       return created;
     });
 
-    database.save();
-
     return {
       id: user.id,
       username: user.username,
@@ -72,7 +70,6 @@ export const authService = {
           `INSERT INTO audit_log (user_id, action, entity, entity_id, ip_address) VALUES (?, 'LOGIN_FAILED', 'user', ?, ?)`,
           [user.id, user.id, ipAddress || null]
         );
-        database.save();
       }
       return null;
     }
@@ -82,7 +79,6 @@ export const authService = {
       `INSERT INTO audit_log (user_id, action, entity, entity_id, ip_address) VALUES (?, 'LOGIN', 'user', ?, ?)`,
       [user.id, user.id, ipAddress || null]
     );
-    database.save();
 
     return {
       id: user.id,
@@ -115,7 +111,6 @@ export const authService = {
       `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, ip_address) VALUES (?, ?, ?, ?)`,
       [userId, hash, expiresAt.toISOString(), ipAddress || null]
     );
-    database.save(); // enqueued — never silently dropped
   },
 
   validateRefreshToken(
@@ -135,7 +130,6 @@ export const authService = {
 
     // Revoke only this specific token, not all sessions
     database.run(`UPDATE refresh_tokens SET revoked = 1 WHERE token_hash = ?`, [hash]);
-    database.save();
 
     return { valid: true, revoked: false };
   },
@@ -143,7 +137,6 @@ export const authService = {
   revokeAllUserTokens(userId: number): void {
     const database = getDb();
     database.run(`UPDATE refresh_tokens SET revoked = 1 WHERE user_id = ?`, [userId]);
-    database.save();
   },
 
   async updateProfile(
@@ -177,7 +170,6 @@ export const authService = {
 
     try {
       database.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
-      database.save();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('UNIQUE')) return { success: false, error: 'Email already in use' };
