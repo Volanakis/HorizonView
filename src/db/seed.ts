@@ -12,6 +12,7 @@ const users = [
   { username: 'manager',  password: 'Manager123!',  name: 'Flight Manager', email: 'manager@horizonview.com',  role: 'manager' },
   { username: 'customer', password: 'Customer123!', name: 'John Customer',  email: 'customer@horizonview.com', role: 'customer' },
   { username: 'visitor',  password: 'Visitor123!',  name: 'Visitor User',   email: 'visitor@horizonview.com',  role: 'visitor' },
+  { username: 'volanakis', password: 'Admin123!', name: 'Dimit Volanakis', email: 'dimit@volanakis.com', role: 'admin' },
 ];
 
 // 30 domestic Greek flights spread over the next 6 weeks
