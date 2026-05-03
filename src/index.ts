@@ -3,13 +3,22 @@ dotenv.config();
 
 import app from './app.js';
 import { db } from './db/index.js';
+import { seed } from './db/seed.js';
 
 const PORT = process.env.PORT || 3000;
 
 async function start() {
   try {
     await db.init();
-    console.log('Database initialized');
+
+    // Auto-seed if database is empty (fixes Render ephemeral filesystem)
+    const users = db.all('SELECT COUNT(*) as cnt FROM users');
+    if (!users[0]?.cnt) {
+      console.log('Empty database detected, seeding...');
+      await seed();
+    } else {
+      console.log(`Database initialized (${users[0].cnt} users)`);
+    }
 
     const server = app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);
