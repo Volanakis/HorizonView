@@ -120,8 +120,6 @@ export const reservationService = {
           [data.user_id, reservation.id]
         );
       });
-
-      database.save();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       return { success: false, error: message };
@@ -136,8 +134,6 @@ export const reservationService = {
 
   cancel(id: number, userId: number): { success: boolean; error?: string } {
     const database = getDb();
-
-    let seatId: number | null = null;
 
     try {
       database.transaction(() => {
@@ -158,7 +154,6 @@ export const reservationService = {
           throw new Error('Already cancelled');
         }
 
-        seatId = reservation.seat_id;
         database.run(`UPDATE reservations SET status = 'cancelled', cancelled_at = datetime('now') WHERE id = ?`, [id]);
         database.run('UPDATE seats SET is_available = 1 WHERE id = ?', [reservation.seat_id]);
         database.run(
@@ -166,7 +161,6 @@ export const reservationService = {
           [userId, id]
         );
       });
-      database.save();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       if (message === 'Reservation not found' || message === 'Unauthorized' || message === 'Already cancelled') {

@@ -128,7 +128,6 @@ export const flightService = {
       return created;
     });
 
-    database.save();
     return this.getById(flight.id)!;
   },
 
@@ -210,7 +209,6 @@ export const flightService = {
       `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES (?, 'FLIGHT_STATE_CHANGE', 'flight', ?)`,
       [userId, id]
     );
-    database.save();
 
     return { success: true };
   },
@@ -232,7 +230,6 @@ export const flightService = {
       `INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES (?, 'FLIGHT_DELETE', 'flight', ?)`,
       [userId, id]
     );
-    database.save();
 
     return { success: true };
   },
