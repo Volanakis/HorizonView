@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
-import Database from 'better-sqlite3';
+import initSqlJs, { Database } from 'sql.js';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import { DDL } from './schema.js';
 
 dotenv.config();
 
@@ -56,7 +58,18 @@ const flights = [
 ];
 
 async function seed() {
-  const db = new Database(dbPath);
+  const SQL = await initSqlJs();
+  let db: any;
+
+  if (fs.existsSync(dbPath)) {
+    const buffer = fs.readFileSync(dbPath);
+    db = new SQL.Database(buffer);
+    console.log('Loaded existing database');
+  } else {
+    console.log('No database found, creating new one...');
+    db = new SQL.Database();
+    db.exec(DDL);
+  }
 
   // ── Users ──────────────────────────────────────────────────
   console.log('Seeding users…\n');
@@ -127,6 +140,7 @@ async function seed() {
   console.log('    manager  / Manager123!');
   console.log('    customer / Customer123!');
   console.log('    visitor  / Visitor123!');
+  console.log('    volanakis / Admin123!');
 }
 
-seed().catch(console.error);
+export { seed };
