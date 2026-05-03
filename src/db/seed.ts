@@ -1,7 +1,8 @@
 import bcrypt from 'bcryptjs';
-import initSqlJs from 'sql.js';
+import initSqlJs, { Database } from 'sql.js';
 import dotenv from 'dotenv';
 import fs from 'fs';
+import { DDL } from './schema.js';
 
 dotenv.config();
 
@@ -73,9 +74,11 @@ async function seed() {
   if (fs.existsSync(dbPath)) {
     const buffer = fs.readFileSync(dbPath);
     db = new SQL.Database(buffer);
+    console.log('Loaded existing database');
   } else {
-    console.error('Database not found. Run npm run migrate first.');
-    process.exit(1);
+    console.log('No database found, creating new one...');
+    db = new SQL.Database();
+    db.exec(DDL);
   }
 
   // ── Users ──────────────────────────────────────────────────
