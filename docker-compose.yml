@@ -1,0 +1,37 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: horizonview
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET:-local-dev-secret-min-32-characters!!}
+      - DATABASE_URL=sqlite:///app/data/horizonview.db
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
+      - SHOW_RESET_TOKEN=${SHOW_RESET_TOKEN:-true}
+      - ENABLE_EXTERNAL_VALIDATION=${ENABLE_EXTERNAL_VALIDATION:-false}
+    volumes:
+      - horizonview-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/flights"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    container_name: horizonview-adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - app
+    profiles:
+      - admin
+
+volumes:
+  horizonview-data:

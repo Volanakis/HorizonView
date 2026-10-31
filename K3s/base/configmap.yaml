@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: horizonview-config
+data:
+  PORT: "3000"
+  DATABASE_URL: "sqlite:///app/data/horizonview.db"
+  ALLOWED_ORIGINS: ""
+  SHOW_RESET_TOKEN: "false"
+  ENABLE_EXTERNAL_VALIDATION: "false"
+  # Behind the ingress: real client IP (rate limits, audit log) and the public URL.
+  ADDRESS_HEADER: "X-Forwarded-For"
+  XFF_DEPTH: "1"
+  PROTOCOL_HEADER: "x-forwarded-proto"
+  HOST_HEADER: "x-forwarded-host"

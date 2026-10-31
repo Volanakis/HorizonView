@@ -1,0 +1,12 @@
+node_modules/
+build/
+.svelte-kit/
+.git/
+.gitignore
+*.md
+.env
+.env.example
+horizonview.db
+horizonview.db-journal
+coverage/
+tests/

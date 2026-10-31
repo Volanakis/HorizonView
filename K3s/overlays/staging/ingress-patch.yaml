@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: horizonview
+spec:
+  rules:
+    - host: staging.horizonview.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: horizonview
+                port:
+                  number: 80

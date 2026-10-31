@@ -1,0 +1,202 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "title": "HorizonView - Application",
+  "description": "Application-level dashboard for the HorizonView flight reservation system",
+  "tags": ["horizonview", "express", "nodejs"],
+  "timezone": "browser",
+  "editable": true,
+  "panels": [
+    {
+      "title": "Request Rate",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{app=\"horizonview\"}[5m]))",
+          "legendFormat": "req/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }] }
+        }
+      }
+    },
+    {
+      "title": "Error Rate",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{app=\"horizonview\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{app=\"horizonview\"}[5m])) * 100",
+          "legendFormat": "% errors"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Active Users",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(active_sessions{app=\"horizonview\"})",
+          "legendFormat": "active"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue" }] }
+        }
+      }
+    },
+    {
+      "title": "HTTP Request Duration (p50 / p95 / p99)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{app=\"horizonview\"}[5m])) by (le))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{app=\"horizonview\"}[5m])) by (le))", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{app=\"horizonview\"}[5m])) by (le))", "legendFormat": "p99" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineInterpolation": "smooth" }
+        }
+      }
+    },
+    {
+      "title": "Requests by Status Code",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        { "expr": "sum(rate(http_requests_total{app=\"horizonview\",status=~\"2..\"}[5m]))", "legendFormat": "2xx" },
+        { "expr": "sum(rate(http_requests_total{app=\"horizonview\",status=~\"3..\"}[5m]))", "legendFormat": "3xx" },
+        { "expr": "sum(rate(http_requests_total{app=\"horizonview\",status=~\"4..\"}[5m]))", "legendFormat": "4xx" },
+        { "expr": "sum(rate(http_requests_total{app=\"horizonview\",status=~\"5..\"}[5m]))", "legendFormat": "5xx" }
+      ],
+      "fieldConfig": {
+        "defaults": { "custom": { "lineInterpolation": "smooth" } }
+      }
+    },
+    {
+      "title": "CPU Usage",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 12 },
+      "targets": [
+        { "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"horizonview\"}[5m])) by (pod)", "legendFormat": "{{pod}}" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "cores", "custom": { "lineInterpolation": "smooth" } }
+      }
+    },
+    {
+      "title": "Memory Usage",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 12 },
+      "targets": [
+        { "expr": "sum(container_memory_working_set_bytes{container=\"horizonview\"}) by (pod)", "legendFormat": "{{pod}}" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "bytes", "custom": { "lineInterpolation": "smooth" } }
+      }
+    },
+    {
+      "title": "Database Size",
+      "type": "gauge",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 20 },
+      "targets": [
+        { "expr": "sum(kubelet_volume_stats_used_bytes{persistentvolumeclaim=\"horizonview-data\"})", "legendFormat": "used" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 536870912 },
+              { "color": "red", "value": 943718400 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Pod Status",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 20 },
+      "targets": [
+        { "expr": "count(kube_pod_status_phase{namespace=~\"horizonview.*\", phase=\"Running\"})", "legendFormat": "running" },
+        { "expr": "count(kube_pod_status_phase{namespace=~\"horizonview.*\", phase=\"Pending\"})", "legendFormat": "pending" },
+        { "expr": "count(kube_pod_status_phase{namespace=~\"horizonview.*\", phase=\"Failed\"})", "legendFormat": "failed" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Uptime",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 20 },
+      "targets": [
+        { "expr": "time() - max(kube_pod_start_time{namespace=~\"horizonview.*\"})", "legendFormat": "uptime" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "color": { "mode": "none" } }
+      }
+    },
+    {
+      "title": "Replica Count",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 20 },
+      "targets": [
+        { "expr": "kube_deployment_spec_replicas{deployment=\"horizonview\"}", "legendFormat": "desired" },
+        { "expr": "kube_deployment_status_replicas_available{deployment=\"horizonview\"}", "legendFormat": "available" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0 }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 36,
+  "version": 1
+}

@@ -1,0 +1,38 @@
+# ── ArgoCD Application: HorizonView Production ──────────
+# Apply with: kubectl apply -f helm/argocd-apps/horizonview-prod.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: horizonview-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Volanakis/HorizonView.git
+    targetRevision: main
+    path: K3s/overlays/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: horizonview-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m
+  revisionHistoryLimit: 5
+  info:
+    - name: Description
+      value: HorizonView flight reservation app - Production

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: horizonview-config
+data:
+  NODE_ENV: "staging"
+  ALLOWED_ORIGINS: "https://staging.horizonview.example.com"
+  SHOW_RESET_TOKEN: "true"
+  ENABLE_EXTERNAL_VALIDATION: "false"

@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: horizonview-prod
+
+resources:
+  - ../../base
+  - secrets.yaml
+
+patches:
+  - path: patches/deployment.yaml
+
+patchesStrategicMerge:
+  - configmap-patch.yaml
+  - ingress-patch.yaml
+
+images:
+  - name: horizonview
+    newName: ghcr.io/volanakis/horizonview
+    newTag: latest

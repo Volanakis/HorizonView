@@ -1,0 +1,78 @@
+# ── ArgoCD Helm values ───────────────────────────────────
+# helm repo add argo https://argoproj.github.io/argo-helm
+# helm upgrade -i argocd argo/argo-cd -n argocd --create-namespace -f values.yaml
+
+global:
+  domain: argocd.example.com
+
+server:
+  extraArgs:
+    - --insecure
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - argocd.example.com
+    tls:
+      - hosts:
+          - argocd.example.com
+        secretName: argocd-tls
+
+configs:
+  params:
+    server.insecure: true
+  rbac:
+    policy.default: role:readonly
+    policy.csv: |
+      g, admins, role:admin
+  cm:
+    timeout.reconciliation: 30s
+    admin.enabled: "true"
+    statusbadge.enabled: "true"
+    url: https://argocd.example.com
+
+controller:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+
+repoServer:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+
+redis:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+applicationSet:
+  enabled: true
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+notifications:
+  enabled: false
