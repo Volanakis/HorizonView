@@ -23,7 +23,7 @@ export const authService = {
     email: string;
     phone?: string;
     vat_number?: string;
-    identity_number: string;
+    identity_number?: string;
     address?: string;
     employee_code?: string;
     ipAddress?: string;
@@ -35,7 +35,7 @@ export const authService = {
     const user = database.transaction(() => {
       database.run(
         `INSERT INTO users (username, password, name, email, phone, vat_number, role, identity_number, address, employee_code) VALUES (?, ?, ?, ?, ?, ?, 'customer', ?, ?, ?)`,
-        [data.username, hashedPassword, data.name, data.email, data.phone || null, data.vat_number || null, data.identity_number, data.address || null, data.employee_code || null]
+        [data.username, hashedPassword, data.name, data.email, data.phone || null, data.vat_number || null, data.identity_number || null, data.address || null, data.employee_code || null]
       );
       const created = database.get('SELECT * FROM users WHERE username = ?', [data.username], UserSchema);
       if (!created) throw new Error('Failed to create user');
