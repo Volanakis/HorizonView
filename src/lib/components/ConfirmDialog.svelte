@@ -56,11 +56,3 @@
     </div>
   </form>
 </dialog>
-
-<style>
-  .btn-destructive {
-    background: var(--danger);
-    border-color: var(--danger);
-    color: var(--surface);
-  }
-</style>

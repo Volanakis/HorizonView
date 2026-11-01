@@ -8,7 +8,7 @@
 
 <div class="route {size}">
   <div class="end">
-    <span class="code iata">{from}</span>
+    <span class="iata">{from}</span>
     <span class="city">{iataToCity(from)}</span>
   </div>
   <div class="line" aria-hidden="true">
@@ -18,7 +18,7 @@
   </div>
   <span class="visually-hidden">→</span>
   <div class="end to">
-    <span class="code iata">{to}</span>
+    <span class="iata">{to}</span>
     <span class="city">{iataToCity(to)}</span>
   </div>
 </div>
@@ -35,8 +35,15 @@
   .end { display: grid; min-width: 0; }
   .to { text-align: right; }
 
-  .iata { font-size: var(--fs-lg); line-height: 1.1; }
-  .lg .iata { font-size: var(--fs-2xl); }
+  /* Airport codes set like an engraved boarding pass: display serif, spaced. */
+  .iata {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 1.625rem;
+    letter-spacing: 0.06em;
+    line-height: 1.1;
+  }
+  .lg .iata { font-size: 2.375rem; }
 
   .city {
     font-size: var(--fs-xs);
@@ -56,6 +63,6 @@
 
   .rule {
     flex: 1;
-    border-top: 1.5px dashed var(--border);
+    border-top: 1px solid var(--border);
   }
 </style>

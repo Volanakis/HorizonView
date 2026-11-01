@@ -93,6 +93,7 @@
     <li><span class="seat swatch" aria-hidden="true"></span>{t('seat.legendFree')}</li>
     <li><span class="seat swatch taken" aria-hidden="true"><Icon name="x" size={12} /></span>{t('seat.legendTaken')}</li>
     <li><span class="seat swatch selected" aria-hidden="true"><Icon name="check" size={12} /></span>{t('seat.legendSelected')}</li>
+    <li><span class="seat swatch business" aria-hidden="true"></span>{t('class.business')}</li>
   </ul>
 
   <div class="fuselage">
@@ -100,7 +101,7 @@
     {#each cabins as cabin (cabin.cls)}
       <section class="cabin" aria-labelledby="cabin-{cabin.cls}">
         <header class="cabin-head">
-          <h3 id="cabin-{cabin.cls}">{t(`class.${cabin.cls}`)}</h3>
+          <h3 id="cabin-{cabin.cls}" class="cabin-name" class:business={cabin.cls === 'business'}>{t(`class.${cabin.cls}`)}</h3>
           <p class="small muted num">
             {t('seat.from', { price: formatPrice(cabin.minPrice) })} · {t('seat.free', { free: cabin.free, total: cabin.total })}
           </p>
@@ -169,6 +170,7 @@
 
   .cabin { display: grid; gap: 0.75rem; justify-items: center; width: 100%; }
   .cabin-head { text-align: center; }
+  .cabin-name { font-family: var(--display); font-size: 1.375rem; font-weight: 500; }
 
   .economy-pick { display: grid; gap: 0.5rem; justify-items: center; text-align: center; }
   .picked { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
@@ -193,8 +195,8 @@
     font-weight: 600;
   }
 
-  /* Business seats are bigger, as they are in the cabin. */
-  .seat.business { width: 2.375rem; height: 2.75rem; }
+  /* Business seats are bigger, as they are in the cabin, and the only gold on the page. */
+  .seat.business { width: 2.375rem; height: 2.75rem; border-color: var(--gold-line); color: var(--gold); }
 
   button.seat { cursor: pointer; }
   button.seat:hover { border-color: var(--accent); }
@@ -215,7 +217,8 @@
   .seat.static.economy:not(.taken) { color: var(--muted); }
   .dimmed .seat.economy:not(.taken) { border-color: var(--accent); }
 
-  .swatch { width: 1.25rem; height: 1.375rem; }
+  /* Legend swatches stay small at every width (beats the seat sizes below). */
+  .legend .seat.swatch { width: 1.25rem; height: 1.375rem; }
 
   @media (min-width: 30rem) {
     .seat { width: 2.25rem; height: 2.5rem; }

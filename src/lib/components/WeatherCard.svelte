@@ -24,5 +24,5 @@
 
 <style>
   .weather { display: grid; gap: 0.125rem; align-content: start; }
-  .temp { font-size: var(--fs-xl); font-weight: 600; line-height: 1.2; }
+  .temp { font-family: var(--display); font-size: 2rem; font-weight: 500; line-height: 1.15; }
 </style>
