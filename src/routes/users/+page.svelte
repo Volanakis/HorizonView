@@ -268,7 +268,7 @@
   /* One number carries the size; the breakdown stays secondary. */
   .stats { display: flex; flex-wrap: wrap; align-items: end; gap: 0.75rem 2.5rem; }
   .primary-stat { display: grid; }
-  .value { font-size: var(--fs-2xl); font-weight: 650; line-height: 1.1; }
+  .value { font-family: var(--display); font-size: 3rem; font-weight: 500; line-height: 1; }
   .by-role { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin: 0; padding: 0; list-style: none; font-size: var(--fs-sm); }
   .by-role .num { font-weight: 600; }
 

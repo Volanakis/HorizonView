@@ -143,7 +143,7 @@
       <div class="side">
         <section class="info card" aria-labelledby="flight-title">
           <div class="row spread">
-            <h1 id="flight-title" class="code">{flight.flight_number}</h1>
+            <h1 id="flight-title">{flight.flight_number}</h1>
             <StateChip kind="flight" value={flight.state} />
           </div>
           <RouteLine from={flight.departure} to={flight.arrival} size="lg" />
@@ -168,8 +168,8 @@
             {/if}
           </div>
         {:else if interactive}
-          <div class="book card" aria-live="polite">
-            <p class="small">
+          <div class="book card" class:is-business={selected?.cls === 'business'} aria-live="polite">
+            <p class="small" class:business={selected?.cls === 'business'}>
               {#if selected}
                 {selected.seat ? t('booking.summary', { cls: t(`class.${selected.cls}`), seat: selected.seat }) : t('booking.summaryEconomy')}
               {:else}
@@ -227,6 +227,9 @@
     gap: 0.75rem;
     box-shadow: var(--shadow-overlay);
   }
+
+  .book.is-business { border-top: 2px solid var(--gold-line); }
+  .book.is-business p { font-weight: 600; }
 
   @media (min-width: 60rem) {
     .layout { grid-template-columns: minmax(0, 1fr) 22rem; align-items: start; }

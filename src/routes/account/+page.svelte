@@ -93,6 +93,60 @@
     }
   }
 
+  // ── Your data ─────────────────────────────────────────────
+  let downloading = $state(false);
+
+  async function downloadData() {
+    downloading = true;
+    try {
+      await request('/auth/me'); // renews an expired session before the plain download
+      const res = await fetch('/api/auth/me/export', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error(t('error.generic'));
+      const url = URL.createObjectURL(await res.blob());
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `horizonview-data-${session.user?.username ?? 'me'}.json`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      downloading = false;
+    }
+  }
+
+  let deleteDialog: HTMLDialogElement;
+  let deletePassword = $state('');
+  let deleteError = $state('');
+  let deleting = $state(false);
+
+  function openDelete() {
+    deletePassword = '';
+    deleteError = '';
+    deleteDialog.showModal();
+  }
+
+  async function deleteAccount(event: SubmitEvent) {
+    event.preventDefault();
+    if (!deletePassword) {
+      deleteError = t('v.required');
+      return;
+    }
+    deleting = true;
+    deleteError = '';
+    try {
+      await request('/auth/me', { method: 'DELETE', body: { password: deletePassword } });
+      deleteDialog.close();
+      session.user = null;
+      toast.info(t('account.deleted'));
+      goto('/');
+    } catch (error) {
+      deleteError = errorMessage(error);
+    } finally {
+      deleting = false;
+    }
+  }
+
   async function signOut() {
     try {
       await session.signOut();
@@ -183,6 +237,17 @@
         <div><button class="btn" type="submit" disabled={pwSaving}>{pwSaving ? t('account.saving') : t('account.changePassword')}</button></div>
       </form>
     </section>
+
+    <section class="card stack" aria-labelledby="data-title">
+      <h2 id="data-title">{t('account.data')}</h2>
+      <p class="small muted">{t('account.dataBody')}</p>
+      <div class="row">
+        <button class="btn" type="button" disabled={downloading} onclick={downloadData}>
+          {downloading ? t('account.downloading') : t('account.download')}
+        </button>
+        <button class="btn btn-danger" type="button" onclick={openDelete}>{t('account.delete')}</button>
+      </div>
+    </section>
   {/if}
 
   <section class="card stack" aria-labelledby="prefs-title">
@@ -191,6 +256,32 @@
     {#if settings.currency !== 'EUR'}<p class="xs muted">{t('settings.ratesNote', { currency: settings.currency })}</p>{/if}
   </section>
 </div>
+
+<dialog bind:this={deleteDialog} class="dialog" aria-labelledby="delete-title" aria-describedby="delete-body">
+  <form class="dialog-body" onsubmit={deleteAccount} novalidate>
+    <h2 id="delete-title">{t('account.deleteTitle')}</h2>
+    <p id="delete-body" class="muted">{t('account.deleteBody')}</p>
+    <div class="field">
+      <label for="delete-password">{t('account.deletePassword')}</label>
+      <input
+        id="delete-password"
+        class="input"
+        type="password"
+        autocomplete="current-password"
+        bind:value={deletePassword}
+        aria-invalid={deleteError ? 'true' : undefined}
+        aria-describedby={deleteError ? 'delete-error' : undefined}
+      />
+      {#if deleteError}<p class="error" id="delete-error">{deleteError}</p>{/if}
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="btn" onclick={() => deleteDialog.close()}>{t('common.cancel')}</button>
+      <button type="submit" class="btn btn-destructive" disabled={deleting}>
+        {deleting ? t('account.deleting') : t('account.delete')}
+      </button>
+    </div>
+  </form>
+</dialog>
 
 <style>
   .narrow { max-width: 48rem; }

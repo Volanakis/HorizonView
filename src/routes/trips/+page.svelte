@@ -71,7 +71,7 @@
 <svelte:head><title>{t('trips.title')} · HorizonView</title></svelte:head>
 
 {#snippet tripCard(trip: Reservation, active: boolean)}
-  <li class="trip card" class:inactive={!active}>
+  <li class="trip card" class:inactive={!active} class:business-trip={trip.ticket_type === 'business'}>
     <div class="trip-head">
       <p class="when">
         <span class="num time">{formatTime(trip.scheduled_time)}</span>
@@ -83,7 +83,7 @@
     <dl class="pass">
       <div><dt>{t('flight.number')}</dt><dd class="code">{trip.flight_number}</dd></div>
       <div><dt>{t('trips.seat')}</dt><dd class="code">{trip.seat_number}</dd></div>
-      <div><dt>{t('trips.class')}</dt><dd>{t(`class.${trip.ticket_type}`)}</dd></div>
+      <div><dt>{t('trips.class')}</dt><dd class:business={trip.ticket_type === 'business'}>{t(`class.${trip.ticket_type}`)}</dd></div>
       <div><dt>{t('trips.paid')}</dt><dd class="num">{formatPrice(trip.price)}</dd></div>
     </dl>
     <div class="trip-foot">
@@ -158,7 +158,10 @@
 
   .trip-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; }
   .when { display: grid; }
-  .time { font-size: var(--fs-lg); font-weight: 650; }
+  .time { font-family: var(--display); font-size: 1.75rem; font-weight: 500; line-height: 1.1; }
+
+  /* Business boarding passes carry a gold rule. */
+  .business-trip { border-top: 2px solid var(--gold-line); }
 
   /* Boarding-pass strip: a perforated rule, then the four facts people look for at the gate. */
   .pass {

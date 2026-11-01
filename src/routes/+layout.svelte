@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '@fontsource-variable/noto-serif-display';
   import '../app.css';
   import type { Snippet } from 'svelte';
   import { onMount } from 'svelte';
@@ -106,8 +107,8 @@
     position: sticky;
     top: 0;
     z-index: 20;
-    background: var(--bg);
-    border-bottom: 1px solid var(--hairline);
+    background: var(--bar);
+    color: var(--on-bar);
   }
 
   .topbar-inner {
@@ -117,15 +118,18 @@
     max-width: var(--content);
     margin: 0 auto;
     padding: 0 var(--gutter);
-    min-height: 3.5rem;
+    min-height: 4rem;
   }
 
   .brand {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    color: var(--text);
-    font-weight: 700;
+    gap: 0.625rem;
+    color: var(--on-bar);
+    font-family: var(--display);
+    font-size: 1.375rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
     text-decoration: none;
   }
 
@@ -137,16 +141,32 @@
     min-height: 2.25rem;
     padding: 0 0.75rem;
     border-radius: var(--r-control);
-    color: var(--muted);
+    color: var(--on-bar-muted);
     font-size: var(--fs-sm);
     font-weight: 600;
+    letter-spacing: 0.02em;
     text-decoration: none;
   }
-  .desktop-nav a:hover, .account-link:hover { color: var(--text); background: var(--sunken); }
-  .desktop-nav a[aria-current='page'], .account-link[aria-current='page'] { color: var(--accent); background: var(--accent-soft); }
+  .desktop-nav a:hover, .account-link:hover { color: var(--on-bar); }
+  .desktop-nav a[aria-current='page'], .account-link[aria-current='page'] { color: #fff; background: var(--bar-pill); }
 
   .topbar-end { display: flex; align-items: center; gap: 0.75rem; margin-left: auto; }
   .desktop-only { display: none; }
+
+  /* Controls sitting on the aubergine bar */
+  .topbar :global(.input) {
+    background: transparent;
+    color: var(--on-bar);
+    border-color: var(--bar-border);
+  }
+  .topbar :global(.input option) { color: #3b1e4d; background: #fff; }
+  .topbar :global(.btn) {
+    background: transparent;
+    color: var(--on-bar);
+    border-color: var(--bar-border);
+  }
+  .topbar :global(.btn:hover) { background: var(--bar-pill); }
+  .topbar :global(:focus-visible) { outline-color: var(--on-bar); }
 
   main { outline: none; }
 

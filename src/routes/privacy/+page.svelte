@@ -17,7 +17,7 @@
 
     <h2>Τι συλλέγουμε και γιατί</h2>
     <ul>
-      <li><strong>Λογαριασμός:</strong> όνομα χρήστη, ονοματεπώνυμο, email, αριθμός ταυτότητας ή διαβατηρίου, ΑΦΜ, διεύθυνση και, προαιρετικά, τηλέφωνο. Ο κωδικός αποθηκεύεται μόνο ως κρυπτογραφικό hash (bcrypt). Χρειάζονται για τη δημιουργία του λογαριασμού και την έκδοση εισιτηρίων στο όνομά σας (εκτέλεση σύμβασης).</li>
+      <li><strong>Λογαριασμός:</strong> όνομα χρήστη, ονοματεπώνυμο και email· προαιρετικά τηλέφωνο, αριθμός ταυτότητας ή διαβατηρίου, ΑΦΜ και διεύθυνση. Ο κωδικός αποθηκεύεται μόνο ως κρυπτογραφικό hash (bcrypt). Χρειάζονται για τη δημιουργία του λογαριασμού και την έκδοση εισιτηρίων στο όνομά σας (εκτέλεση σύμβασης).</li>
       <li><strong>Κρατήσεις:</strong> πτήση, θέση, κατηγορία, τιμή και ημερομηνία κράτησης (εκτέλεση σύμβασης).</li>
       <li><strong>Αρχείο ασφαλείας:</strong> συνδέσεις, αποτυχημένες συνδέσεις και ενέργειες του προσωπικού καταγράφονται με διεύθυνση IP και τύπο προγράμματος περιήγησης, για την προστασία των λογαριασμών και της υπηρεσίας (έννομο συμφέρον).</li>
     </ul>
@@ -29,10 +29,10 @@
     <p>Για τον καιρό και τις ισοτιμίες, ο διακομιστής ζητά δεδομένα από τις υπηρεσίες Weatherstack και Fixer με βάση την πόλη ή το νόμισμα, χωρίς προσωπικά δεδομένα. Αν ο διαχειριστής ενεργοποιήσει τον έλεγχο στοιχείων κατά την εγγραφή, το email και το τηλέφωνό σας ελέγχονται από τις υπηρεσίες Mailboxlayer και Numverify (apilayer).</p>
 
     <h2>Πόσο καιρό τα κρατάμε</h2>
-    <p>Τα στοιχεία λογαριασμού και κρατήσεων διατηρούνται όσο υπάρχει ο λογαριασμός. Οι εγγραφές του αρχείου ασφαλείας διαγράφονται μετά από 90 ημέρες. Τα ληγμένα tokens σύνδεσης διαγράφονται αυτόματα.</p>
+    <p>Τα στοιχεία λογαριασμού και κρατήσεων διατηρούνται όσο υπάρχει ο λογαριασμός. Αν τον διαγράψετε, το προφίλ σας σβήνεται και οι παλαιότερες κρατήσεις διατηρούνται χωρίς το όνομά σας. Οι εγγραφές του αρχείου ασφαλείας διαγράφονται μετά από 90 ημέρες. Τα ληγμένα tokens σύνδεσης διαγράφονται αυτόματα.</p>
 
     <h2>Τα δικαιώματά σας</h2>
-    <p>Έχετε δικαίωμα πρόσβασης, διόρθωσης, διαγραφής, περιορισμού, φορητότητας και εναντίωσης. Μπορείτε να διορθώσετε τα στοιχεία σας από τη σελίδα «Λογαριασμός». Για αντίγραφο των δεδομένων σας ή διαγραφή του λογαριασμού, επικοινωνήστε με τον συντηρητή. Μπορείτε επίσης να υποβάλετε καταγγελία στην <a href="https://www.dpa.gr">Αρχή Προστασίας Δεδομένων Προσωπικού Χαρακτήρα</a>.</p>
+    <p>Έχετε δικαίωμα πρόσβασης, διόρθωσης, διαγραφής, περιορισμού, φορητότητας και εναντίωσης. Από τη σελίδα «Λογαριασμός» μπορείτε να διορθώσετε τα στοιχεία σας, να κατεβάσετε αντίγραφο των δεδομένων σας και να διαγράψετε τον λογαριασμό σας. Για οτιδήποτε άλλο, επικοινωνήστε με τον συντηρητή. Μπορείτε επίσης να υποβάλετε καταγγελία στην <a href="https://www.dpa.gr">Αρχή Προστασίας Δεδομένων Προσωπικού Χαρακτήρα</a>.</p>
   {:else}
     <h1>Privacy notice</h1>
     <p class="muted small">Last updated: 1 November 2026</p>
@@ -42,7 +42,7 @@
 
     <h2>What we collect and why</h2>
     <ul>
-      <li><strong>Account:</strong> username, full name, email, ID or passport number, VAT number, address and, optionally, phone. Your password is stored only as a bcrypt hash. We need these to create your account and issue tickets in your name (performance of a contract).</li>
+      <li><strong>Account:</strong> username, full name and email; optionally phone, ID or passport number, VAT number and address. Your password is stored only as a bcrypt hash. We need these to create your account and issue tickets in your name (performance of a contract).</li>
       <li><strong>Bookings:</strong> flight, seat, class, price and booking date (performance of a contract).</li>
       <li><strong>Security log:</strong> sign-ins, failed sign-ins and staff actions are recorded with IP address and browser type, to protect accounts and the service (legitimate interest).</li>
     </ul>
@@ -54,10 +54,10 @@
     <p>For weather and exchange rates, the server asks Weatherstack and Fixer for data by city or currency, without personal data. If the operator turns on registration checks, your email and phone number are verified with Mailboxlayer and Numverify (apilayer).</p>
 
     <h2>How long we keep it</h2>
-    <p>Account and booking data is kept while your account exists. Security log entries are deleted after 90 days. Expired sign-in tokens are deleted automatically.</p>
+    <p>Account and booking data is kept while your account exists. If you delete your account, your profile is erased and past bookings are kept without your name. Security log entries are deleted after 90 days. Expired sign-in tokens are deleted automatically.</p>
 
     <h2>Your rights</h2>
-    <p>You can access, correct, erase, restrict, port and object to the processing of your data. Correct your details on the Account page. For a copy of your data or to delete your account, contact the maintainer. You can also complain to a data protection authority, in Greece the <a href="https://www.dpa.gr">Hellenic Data Protection Authority</a>.</p>
+    <p>You can access, correct, erase, restrict, port and object to the processing of your data. On the Account page you can correct your details, download a copy of your data and delete your account. For anything else, contact the maintainer. You can also complain to a data protection authority, in Greece the <a href="https://www.dpa.gr">Hellenic Data Protection Authority</a>.</p>
   {/if}
 </article>
 

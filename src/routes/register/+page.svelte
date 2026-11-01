@@ -34,9 +34,7 @@
     if (form.name.trim().length < 2) e.name = t('v.nameMin');
     if (!EMAIL.test(form.email.trim())) e.email = t('v.email');
     if (form.phone && !PHONE.test(form.phone)) e.phone = t('v.phone');
-    if (!form.identity_number.trim()) e.identity_number = t('v.required');
-    if (!form.vat_number.trim()) e.vat_number = t('v.required');
-    if (form.address.trim().length < 5) e.address = t('v.addressMin');
+    if (form.address.trim() && form.address.trim().length < 5) e.address = t('v.addressMin');
     if (!STRONG_PASSWORD.test(form.password)) e.password = t('v.password');
     if (form.confirm !== form.password) e.confirm = t('v.passwordMatch');
     if (!privacyRead) e.privacy = t('v.privacy');
@@ -65,10 +63,11 @@
           username,
           name: form.name.trim(),
           email: form.email.trim(),
+          // Optional details are only sent when given.
           ...(form.phone ? { phone: form.phone } : {}),
-          identity_number: form.identity_number.trim(),
-          vat_number: form.vat_number.trim(),
-          address: form.address.trim(),
+          ...(form.identity_number.trim() ? { identity_number: form.identity_number.trim() } : {}),
+          ...(form.vat_number.trim() ? { vat_number: form.vat_number.trim() } : {}),
+          ...(form.address.trim() ? { address: form.address.trim() } : {}),
           password: form.password
         }
       });
@@ -119,10 +118,10 @@
         {@render text('name', t('account.name'), { autocomplete: 'name' })}
         {@render text('email', t('account.email'), { type: 'email', autocomplete: 'email' })}
         {@render text('phone', t('account.phone'), { type: 'tel', autocomplete: 'tel', optional: true, placeholder: '+30 210 123 4567' })}
-        {@render text('identity_number', t('register.identity'), {})}
-        {@render text('vat_number', t('register.vat'), {})}
+        {@render text('identity_number', t('register.identity'), { optional: true })}
+        {@render text('vat_number', t('register.vat'), { optional: true })}
       </div>
-      {@render text('address', t('account.address'), { autocomplete: 'street-address' })}
+      {@render text('address', t('account.address'), { autocomplete: 'street-address', optional: true })}
       <div class="form-grid">
         {@render text('password', t('auth.password'), { type: 'password', autocomplete: 'new-password', hint: t('register.passwordHint') })}
         {@render text('confirm', t('account.confirmPassword'), { type: 'password', autocomplete: 'new-password' })}

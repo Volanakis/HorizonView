@@ -194,9 +194,9 @@
   .actions .btn-primary { flex: 1; }
 
   .results { display: grid; gap: 1rem; }
-  .day { display: grid; gap: 0.5rem; }
+  .day { display: grid; gap: 0.75rem; }
 
-  .flight-list { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+  .flight-list { display: grid; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
 
   .flight {
     position: relative;
@@ -208,12 +208,18 @@
       'status go';
     gap: 0.75rem 1rem;
     align-items: center;
-    padding: 1rem 1.25rem;
+    padding: 1.25rem 1.5rem;
   }
   .flight:hover { border-color: var(--border); }
   .flight:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  .time { grid-area: time; font-size: var(--fs-xl); font-weight: 650; line-height: 1; }
+  .time {
+    grid-area: time;
+    font-family: var(--display);
+    font-size: 1.875rem;
+    font-weight: 500;
+    line-height: 1;
+  }
   .route { grid-area: route; min-width: 0; }
   .meta { grid-area: meta; display: grid; justify-items: end; text-align: right; }
   .status { grid-area: status; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
