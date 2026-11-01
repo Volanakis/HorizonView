@@ -11,7 +11,7 @@ export interface User {
   password: string;
   name: string;
   vat_number: string | null;
-  identity_number: string;
+  identity_number: string | null;
   is_active: boolean;
   address: string | null;
   employee_code: string | null;

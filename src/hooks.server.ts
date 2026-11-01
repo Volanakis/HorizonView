@@ -2,7 +2,7 @@ import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { seed } from '$lib/server/db/seed.js';
 import { authService } from '$lib/server/services/auth.service.js';
-import { ALLOWED_ORIGINS, NODE_ENV, assertServerConfig } from '$lib/server/config.js';
+import { ALLOWED_ORIGINS, NODE_ENV, SEED_DEMO_DATA, assertServerConfig } from '$lib/server/config.js';
 import { ensureCsrfCookie } from '$lib/server/csrf.js';
 import { apiLimit } from '$lib/server/rate-limit.js';
 import { ApiFailure } from '$lib/server/http.js';
@@ -11,11 +11,13 @@ export const init: ServerInit = async () => {
   assertServerConfig();
 
   if (NODE_ENV !== 'test') {
-    // Auto-seed an empty database (Render's filesystem is ephemeral).
+    // Demo accounts have published passwords, so production only seeds when asked to.
     const users = db.get<{ cnt: number }>('SELECT COUNT(*) as cnt FROM users');
-    if (!users?.cnt) {
-      console.log('Empty database detected, seeding...');
+    if (!users?.cnt && SEED_DEMO_DATA) {
+      console.log('Empty database detected, seeding demo data...');
       await seed();
+    } else if (!users?.cnt) {
+      console.log('Empty database. Demo data is off in production (SEED_DEMO_DATA=true to seed); create an admin with npm run make-admin.');
     } else {
       console.log(`Database initialized (${users.cnt} users)`);
     }
