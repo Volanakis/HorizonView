@@ -18,7 +18,7 @@
     "seed:bulk": "tsx src/lib/server/db/seed-bulk.ts",
     "seed:reservations": "tsx src/lib/server/db/seed-reservations.ts",
     "seed:flights": "tsx src/lib/server/db/seed-flights.ts",
-    "make-admin": "tsx scripts/make-admin.ts",
+    "make-admin": "node scripts/make-admin.mjs",
     "test": "vite build --logLevel warn && vitest run",
     "test:watch": "vitest",
     "test:coverage": "vite build --logLevel warn && vitest run --coverage"

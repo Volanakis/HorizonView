@@ -285,6 +285,7 @@ The database auto-seeds these accounts so you can explore every role right away:
 | `npm run migrate:undo` | Drop all tables |
 | `npm run seed` | Seed users and base data |
 | `npm run seed:flights` | Seed flight and seat data |
+| `npm run make-admin -- <user> [password]` | Promote a user to admin, or create one (Docker: `docker compose exec app npm run make-admin -- …`) |
 | `npm run check` / `typecheck` | Type-check everything with `svelte-check` (pages, API, tests) |
 | `npm test` | Build, then run Vitest (integration tests hit the built server) |
 
