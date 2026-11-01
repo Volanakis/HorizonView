@@ -7,6 +7,14 @@ import { z } from 'zod';
 const fileEnv: Record<string, string> = {};
 dotenv.config({ processEnv: fileEnv });
 
+// "true", "1", "yes", "on" → true; "false", "0" or anything else → false; empty → not set.
+// (z.coerce.boolean() would turn the string "false" into true.)
+const flag = z.preprocess((v) => {
+  if (typeof v !== 'string') return v;
+  const value = v.trim().toLowerCase();
+  return value === '' ? undefined : ['true', '1', 'yes', 'on'].includes(value);
+}, z.boolean().optional());
+
 const ConfigSchema = z.object({
   DATABASE_URL: z.string().refine(v => v.startsWith('sqlite://'), 'DATABASE_URL must start with sqlite://').default('sqlite://./horizonview.db'),
   // Checked when the server starts (assertServerConfig), so builds don't need the secret.
@@ -19,8 +27,10 @@ const ConfigSchema = z.object({
   IPSTACK_API_KEY: z.string().optional(),
   WEATHERSTACK_API_KEY: z.string().optional(),
   FIXER_API_KEY: z.string().optional(),
-  ENABLE_EXTERNAL_VALIDATION: z.coerce.boolean().default(false),
-  SHOW_RESET_TOKEN: z.coerce.boolean().default(false)
+  ENABLE_EXTERNAL_VALIDATION: flag,
+  SHOW_RESET_TOKEN: flag,
+  // Unset: seed demo accounts into an empty database everywhere except production.
+  SEED_DEMO_DATA: flag
 });
 
 const result = ConfigSchema.safeParse({ ...fileEnv, ...process.env });
@@ -35,10 +45,18 @@ if (!result.success) {
 
 const config = result.data;
 
+// Secrets that ship in this repository's examples and defaults.
+const PLACEHOLDER_SECRET = /change[-_ ]?(me|this)|local-dev-secret|example/i;
+
 /** Called once when the server starts (hooks.server.ts init). */
 export function assertServerConfig(): void {
   if (config.JWT_SECRET.length < 32) {
     console.error('❌ Invalid environment variables:\n  - JWT_SECRET: JWT_SECRET must be at least 32 characters');
+    process.exit(1);
+  }
+  // Anyone can read a published placeholder and forge admin tokens with it.
+  if (config.NODE_ENV === 'production' && PLACEHOLDER_SECRET.test(config.JWT_SECRET)) {
+    console.error('❌ JWT_SECRET is a placeholder from the repository. Generate one with: openssl rand -base64 48');
     process.exit(1);
   }
 }
@@ -51,8 +69,9 @@ export const DATABASE_URL = config.DATABASE_URL;
 export const JWT_SECRET = config.JWT_SECRET;
 export const ALLOWED_ORIGINS = config.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
 export const NODE_ENV = config.NODE_ENV;
-export const ENABLE_EXTERNAL_VALIDATION = config.ENABLE_EXTERNAL_VALIDATION;
-export const SHOW_RESET_TOKEN = config.SHOW_RESET_TOKEN;
+export const ENABLE_EXTERNAL_VALIDATION = config.ENABLE_EXTERNAL_VALIDATION ?? false;
+export const SHOW_RESET_TOKEN = config.SHOW_RESET_TOKEN ?? false;
+export const SEED_DEMO_DATA = config.SEED_DEMO_DATA ?? config.NODE_ENV !== 'production';
 
 export const EXTERNAL_API_KEYS = {
   AVIATIONSTACK: config.AVIATIONSTACK_API_KEY,

@@ -2,6 +2,15 @@ import { z } from 'zod';
 
 // Request schemas for the /api endpoints (moved from the Express controllers).
 
+// Optional text field: blank counts as not given.
+const optionalText = (max: number, min = 1) =>
+  z.string()
+    .trim()
+    .max(max)
+    .refine((v) => v === '' || v.length >= min, { message: `String must contain at least ${min} character(s)` })
+    .optional()
+    .transform((v) => v || undefined);
+
 // ── auth ──
 export const registerSchema = z.object({
   username: z.string().min(3).max(50),
@@ -9,10 +18,15 @@ export const registerSchema = z.object({
   name: z.string().min(1).max(100),
   email: z.string().email(),
   phone: z.string().optional(),
-  vat_number: z.string().min(1).max(20),
-  identity_number: z.string().min(1).max(20),
-  address: z.string().min(5).max(255),
+  // Not needed to open an account (data minimisation), so optional at sign-up.
+  vat_number: optionalText(20),
+  identity_number: optionalText(20),
+  address: optionalText(255, 5),
   employee_code: z.string().min(1).max(50).optional()
+});
+
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1)
 });
 
 export const loginSchema = z.object({
