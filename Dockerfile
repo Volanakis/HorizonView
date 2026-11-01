@@ -37,7 +37,8 @@ VOLUME [ "/app/data" ]
 USER node
 EXPOSE 3000
 
+# 127.0.0.1, not localhost: in Alpine localhost resolves to ::1 first, and the server listens on IPv4.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/health', r => { let b=''; r.on('data',c=>b+=c); r.on('end',()=>process.exit(b.includes('\"status\":\"ok\"')?0:1)) })"
+  CMD node -e "require('http').get('http://127.0.0.1:3000/api/health', r => { let b=''; r.on('data',c=>b+=c); r.on('end',()=>process.exit(b.includes('\"status\":\"ok\"')?0:1)) })"
 
 CMD ["node", "build"]
