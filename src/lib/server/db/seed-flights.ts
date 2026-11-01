@@ -1,122 +1,73 @@
-import Database from 'better-sqlite3';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const dbPath = (process.env.DATABASE_URL || 'sqlite://./horizonview.db').replace(/^sqlite:\/\//, '');
-
-const greekAirports = [
-  { code: 'ATH', name: 'Athens' },
-  { code: 'SKG', name: 'Thessaloniki' },
-  { code: 'HER', name: 'Heraklion' },
-  { code: 'RHO', name: 'Rhodes' },
-  { code: 'JMK', name: 'Mykonos' },
-  { code: 'JTR', name: 'Santorini' },
-  { code: 'KVA', name: 'Kavala' },
-  { code: 'CHQ', name: 'Chania' },
-  { code: 'KGS', name: 'Kos' },
-  { code: 'EFL', name: 'Kefalonia' }
-];
+// npm run seed:flights — adds 20 Greek domestic flights (A320, 180 seats) over the next 10 days.
+// Uses the same seat layout as the main seed and the Create flight form.
+import { getDb } from './index.js';
+import { generateSeats, insertSeats } from '../seats.js';
+import { iataToCity } from '../../airports.js';
 
 const flightsWithinGreece = [
-  { number: 'HV101', departure: 'ATH', arrival: 'SKG' },
-  { number: 'HV102', departure: 'SKG', arrival: 'ATH' },
-  { number: 'HV103', departure: 'ATH', arrival: 'HER' },
-  { number: 'HV104', departure: 'HER', arrival: 'ATH' },
-  { number: 'HV105', departure: 'ATH', arrival: 'RHO' },
-  { number: 'HV106', departure: 'RHO', arrival: 'ATH' },
-  { number: 'HV107', departure: 'ATH', arrival: 'JMK' },
-  { number: 'HV108', departure: 'JMK', arrival: 'ATH' },
-  { number: 'HV109', departure: 'ATH', arrival: 'JTR' },
-  { number: 'HV110', departure: 'JTR', arrival: 'ATH' },
-  { number: 'HV111', departure: 'SKG', arrival: 'HER' },
-  { number: 'HV112', departure: 'HER', arrival: 'SKG' },
-  { number: 'HV113', departure: 'SKG', arrival: 'KVA' },
-  { number: 'HV114', departure: 'KVA', arrival: 'SKG' },
-  { number: 'HV115', departure: 'ATH', arrival: 'CHQ' },
-  { number: 'HV116', departure: 'CHQ', arrival: 'ATH' },
-  { number: 'HV117', departure: 'ATH', arrival: 'KGS' },
-  { number: 'HV118', departure: 'KGS', arrival: 'ATH' },
-  { number: 'HV119', departure: 'ATH', arrival: 'EFL' },
-  { number: 'HV120', departure: 'EFL', arrival: 'ATH' }
+  { number: 'HV201', departure: 'ATH', arrival: 'SKG' },
+  { number: 'HV202', departure: 'SKG', arrival: 'ATH' },
+  { number: 'HV203', departure: 'ATH', arrival: 'HER' },
+  { number: 'HV204', departure: 'HER', arrival: 'ATH' },
+  { number: 'HV205', departure: 'ATH', arrival: 'RHO' },
+  { number: 'HV206', departure: 'RHO', arrival: 'ATH' },
+  { number: 'HV207', departure: 'ATH', arrival: 'JMK' },
+  { number: 'HV208', departure: 'JMK', arrival: 'ATH' },
+  { number: 'HV209', departure: 'ATH', arrival: 'JTR' },
+  { number: 'HV210', departure: 'JTR', arrival: 'ATH' },
+  { number: 'HV211', departure: 'SKG', arrival: 'HER' },
+  { number: 'HV212', departure: 'HER', arrival: 'SKG' },
+  { number: 'HV213', departure: 'SKG', arrival: 'KVA' },
+  { number: 'HV214', departure: 'KVA', arrival: 'SKG' },
+  { number: 'HV215', departure: 'ATH', arrival: 'CHQ' },
+  { number: 'HV216', departure: 'CHQ', arrival: 'ATH' },
+  { number: 'HV217', departure: 'ATH', arrival: 'KGS' },
+  { number: 'HV218', departure: 'KGS', arrival: 'ATH' },
+  { number: 'HV219', departure: 'ATH', arrival: 'EFL' },
+  { number: 'HV220', departure: 'EFL', arrival: 'ATH' }
 ];
+
+const TOTAL_SEATS = 180;
+const SEATS_PER_ROW = 6;
+const BUSINESS_ROWS = 5;
 
 function seedFlights() {
   console.log('Seeding flights within Greece...\n');
+  const db = getDb();
 
-  const db = new Database(dbPath);
-
-  const managerRow = db.prepare("SELECT id FROM users WHERE username = 'manager'").get() as { id: number } | undefined;
-  if (!managerRow) {
+  const manager = db.get<{ id: number }>("SELECT id FROM users WHERE username = 'manager'");
+  if (!manager) {
     console.error('Manager user not found. Run npm run seed first.');
     process.exit(1);
   }
-  const managerId = managerRow.id;
 
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() + 1);
-
-  const insertFlight = db.prepare(
-    `INSERT INTO flights (flight_number, departure, arrival, scheduled_time, total_seats, created_by, state) VALUES (?, ?, ?, ?, ?, ?, 'created')`
-  );
-  const insertSeat = db.prepare(
-    `INSERT INTO seats (flight_id, seat_number, class, price, is_available) VALUES (?, ?, ?, ?, 1)`
-  );
-
-  for (let i = 0; i < flightsWithinGreece.length; i++) {
-    const flight = flightsWithinGreece[i];
-    const scheduledDate = new Date(startDate);
-    scheduledDate.setHours(6 + (i * 2), 0, 0, 0);
+  let created = 0;
+  flightsWithinGreece.forEach((flight, i) => {
+    // Two flights a day, starting tomorrow, at 07:00 and 15:00 UTC.
+    const when = new Date();
+    when.setUTCDate(when.getUTCDate() + 1 + Math.floor(i / 2));
+    when.setUTCHours(i % 2 ? 15 : 7, 0, 0, 0);
 
     try {
-      const result = insertFlight.run(
-        flight.number, flight.departure, flight.arrival,
-        scheduledDate.toISOString(), 180, managerId
-      );
-      const flightId = Number(result.lastInsertRowid);
-
-      const businessRows = 5;
-      const normalRows = 10;
-      const totalSeats = 180;
-
-      let seatNum = 1;
-      for (let row = 1; row <= Math.ceil(totalSeats / 30); row++) {
-        for (let col = 1; col <= 30; col++) {
-          if (seatNum > totalSeats) break;
-
-          let classType: string;
-          let price: number;
-
-          if (row <= businessRows) {
-            classType = 'business';
-            price = 450;
-          } else if (row <= businessRows + normalRows) {
-            classType = 'normal';
-            price = 250;
-          } else {
-            classType = 'economy';
-            price = 150;
-          }
-
-          insertSeat.run(flightId, `${row}${String.fromCharCode(64 + col)}`, classType, price);
-          seatNum++;
-        }
-      }
-
-      const depName = greekAirports.find(a => a.code === flight.departure)?.name;
-      const arrName = greekAirports.find(a => a.code === flight.arrival)?.name;
-      console.log(`✓ Created ${flight.number}: ${depName} → ${arrName}`);
-    } catch (err: any) {
-      if (err.message.includes('UNIQUE')) {
-        console.log(`- ${flight.number} already exists (skipped)`);
-      } else {
-        console.error(`✗ Error creating ${flight.number}:`, err.message);
-      }
+      db.transaction(() => {
+        const { lastInsertRowid } = db.run(
+          `INSERT INTO flights (flight_number, departure, arrival, scheduled_time, total_seats, created_by, state, airplane, num_rows, seats_per_row, business_rows)
+           VALUES (?, ?, ?, ?, ?, ?, 'created', 'Airbus A320', ?, ?, ?)`,
+          [flight.number, flight.departure, flight.arrival, when.toISOString(), TOTAL_SEATS, manager.id,
+           TOTAL_SEATS / SEATS_PER_ROW, SEATS_PER_ROW, BUSINESS_ROWS]
+        );
+        insertSeats(generateSeats(Number(lastInsertRowid), TOTAL_SEATS, BUSINESS_ROWS, SEATS_PER_ROW));
+      });
+      created++;
+      console.log(`✓ Created ${flight.number}: ${iataToCity(flight.departure)} → ${iataToCity(flight.arrival)}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.log(message.includes('UNIQUE') ? `- ${flight.number} already exists (skipped)` : `✗ ${flight.number}: ${message}`);
     }
-  }
+  });
 
   db.close();
-  console.log('\n✅ Done! 20 flights seeded within Greece.');
+  console.log(`\n✅ Done! ${created} flights seeded within Greece.`);
 }
 
 seedFlights();

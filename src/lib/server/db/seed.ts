@@ -12,7 +12,11 @@ const users = [
   { username: 'admin2', password: 'Admin123!', name: 'Admin User', email: 'admin2@horizonview.com', role: 'admin', identity_number: 'AT000005', address: null, employee_code: 'EMP003' },
 ];
 
-const base = new Date('2026-05-01T00:00:00Z');
+// Dates are relative to the day the seed runs: a few completed flights in the
+// past days, crew-assigned ones next week, and bookable ones 1–5 weeks out.
+const base = new Date();
+base.setUTCHours(0, 0, 0, 0);
+base.setUTCDate(base.getUTCDate() - 3);
 function dt(dayOffset: number, hour: number, min = 0): string {
   const d = new Date(base);
   d.setUTCDate(d.getUTCDate() + dayOffset);

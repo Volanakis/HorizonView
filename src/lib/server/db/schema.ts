@@ -1,13 +1,15 @@
 // Single source of truth for all DDL.
 // Imported by both db/index.ts (runtime init) and db/migrate.ts (CLI migration).
-export const DDL = `
-  CREATE TABLE IF NOT EXISTS users (
+
+// Table definitions that db/migrations.ts also uses to rebuild older databases.
+export const usersTable = (name: string) => `
+  CREATE TABLE IF NOT EXISTS ${name} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     name VARCHAR(100) NOT NULL,
     vat_number VARCHAR(20) UNIQUE,
-    identity_number VARCHAR(20) UNIQUE NOT NULL,
+    identity_number VARCHAR(20) UNIQUE,
     is_active       INTEGER NOT NULL DEFAULT 1,
     address         TEXT,
     employee_code   VARCHAR(50) UNIQUE,
@@ -17,7 +19,26 @@ export const DDL = `
     last_login DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+  );`;
+
+// One active booking per seat is enforced by idx_reservations_active_seat below,
+// so cancelled bookings stay as history without blocking the seat.
+export const reservationsTable = (name: string) => `
+  CREATE TABLE IF NOT EXISTS ${name} (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    flight_id INTEGER NOT NULL REFERENCES flights(id),
+    seat_id INTEGER NOT NULL REFERENCES seats(id),
+    ticket_type VARCHAR(20) NOT NULL CHECK(ticket_type IN ('economy', 'normal', 'business')),
+    price NUMERIC(10,2) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'confirmed' CHECK(status IN ('confirmed', 'completed', 'cancelled')),
+    cancelled_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );`;
+
+export const DDL = `
+  ${usersTable('users')}
 
   CREATE TABLE IF NOT EXISTS flights (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,19 +68,7 @@ export const DDL = `
     UNIQUE(flight_id, seat_number)
   );
 
-  CREATE TABLE IF NOT EXISTS reservations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL REFERENCES users(id),
-    flight_id INTEGER NOT NULL REFERENCES flights(id),
-    seat_id INTEGER NOT NULL REFERENCES seats(id),
-    ticket_type VARCHAR(20) NOT NULL CHECK(ticket_type IN ('economy', 'normal', 'business')),
-    price NUMERIC(10,2) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'confirmed' CHECK(status IN ('confirmed', 'completed', 'cancelled')),
-    cancelled_at DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(seat_id)
-  );
+  ${reservationsTable('reservations')}
 
   CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -101,6 +110,7 @@ export const DDL = `
   CREATE INDEX IF NOT EXISTS idx_seats_flight      ON seats(flight_id);
   CREATE INDEX IF NOT EXISTS idx_reservations_user   ON reservations(user_id);
   CREATE INDEX IF NOT EXISTS idx_reservations_flight ON reservations(flight_id);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_reservations_active_seat ON reservations(seat_id) WHERE status <> 'cancelled';
   CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
   CREATE INDEX IF NOT EXISTS idx_refresh_tokens_hash ON refresh_tokens(token_hash);
   CREATE INDEX IF NOT EXISTS idx_reset_tokens_hash   ON password_reset_tokens(token_hash);

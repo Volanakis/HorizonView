@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import dotenv from 'dotenv';
 import { DDL } from './schema.js';
+import { runMigrations } from './migrations.js';
 import { resolveDbPath } from '../config.js';
 
 dotenv.config();
@@ -12,6 +13,7 @@ function migrate() {
 
   const db = new Database(dbPath);
   db.exec(DDL);
+  runMigrations(db);
   db.close();
 
   console.log('Migrations complete!');

@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { z } from 'zod';
 import { DDL } from './schema.js';
+import { runMigrations } from './migrations.js';
 import {
   UserSchema,
   FlightSchema,
@@ -21,6 +22,7 @@ class DatabaseWrapper {
     if (!this.connection) {
       this.connection = new Database(resolveDbPath());
       this.connection.exec(DDL);
+      runMigrations(this.connection);
     }
     return this.connection;
   }
