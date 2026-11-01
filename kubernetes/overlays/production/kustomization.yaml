@@ -5,7 +5,6 @@ namespace: horizonview-prod
 
 resources:
   - ../../base
-  - secrets.yaml
 
 patches:
   - path: patches/deployment.yaml

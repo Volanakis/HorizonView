@@ -3,7 +3,6 @@ kind: ConfigMap
 metadata:
   name: horizonview-config
 data:
-  NODE_ENV: "production"
   ALLOWED_ORIGINS: "https://horizonview.example.com"
   SHOW_RESET_TOKEN: "false"
   ENABLE_EXTERNAL_VALIDATION: "false"

@@ -5,7 +5,6 @@ namespace: horizonview-staging
 
 resources:
   - ../../base
-  - secrets.yaml
 
 patches:
   - path: patches/deployment.yaml
