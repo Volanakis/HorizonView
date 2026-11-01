@@ -9,11 +9,12 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - PORT=3000
-      - JWT_SECRET=${JWT_SECRET:-local-dev-secret-min-32-characters!!}
+      - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env (openssl rand -base64 48)}
       - DATABASE_URL=sqlite:///app/data/horizonview.db
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
       - SHOW_RESET_TOKEN=${SHOW_RESET_TOKEN:-true}
       - ENABLE_EXTERNAL_VALIDATION=${ENABLE_EXTERNAL_VALIDATION:-false}
+      - SEED_DEMO_DATA=${SEED_DEMO_DATA:-}
     volumes:
       - horizonview-data:/app/data
     healthcheck:
