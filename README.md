@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="static/logo-reversed-large.png">
+    <img src="static/logo.png" alt="HorizonView logo" width="160">
+  </picture>
+</p>
+
 # ✈️ HorizonView
 
 <h3 align="center">Airline Flight & Reservation Management System</h3>
@@ -232,7 +239,7 @@ HorizonView/
 │           ├── csrf.ts · rate-limit.ts · schemas.ts · config.ts
 │           ├── services/     # auth, flight, reservation, user, external-api
 │           └── db/           # better-sqlite3 wrapper, schema, migrate and seed CLIs
-├── static/                   # favicon, sw.js (removes the old service worker)
+├── static/                   # logo (full colour + reversed), favicon, sw.js (removes the old service worker)
 ├── scripts/make-admin.mjs    # Promote/create an admin (runs locally and in Docker)
 ├── tests/                    # Vitest: unit tests + Supertest against build/handler.js
 ├── diagrams/                 # Architecture, API, database and flow docs

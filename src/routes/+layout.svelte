@@ -49,7 +49,8 @@
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="/">
-      <img src="/favicon.svg" alt="" width="24" height="24" />
+      <!-- Reversed (light) version of the logo, made for the dark header bar -->
+      <img class="logo" src="/logo-reversed.png" alt="" width="56" height="40" />
       <span>HorizonView</span>
     </a>
 
@@ -132,6 +133,7 @@
     letter-spacing: 0.01em;
     text-decoration: none;
   }
+  .logo { display: block; }
 
   .desktop-nav { display: none; gap: 0.25rem; }
   .desktop-nav a, .account-link {
