@@ -23,7 +23,22 @@
   --overlay: rgba(59, 30, 77, 0.45);
   --shadow-overlay: 0 12px 32px rgba(59, 30, 77, 0.2), 0 2px 6px rgba(59, 30, 77, 0.1);
 
+  /* Champagne gold, from the stamens in the palette photo. It is data, not
+     decoration: it marks Business class and nothing else. */
+  --gold: #7f5f22;            /* text: 5.9:1 on surface, 5.0:1 on bg */
+  --gold-line: #b08a45;       /* borders on cards only: 3.2:1 on surface */
+  --gold-soft: #f6eedd;       /* gold text on it: 5.1:1 */
+
+  /* Aubergine header bar */
+  --bar: #3b1e4d;
+  --on-bar: #f3e9f6;          /* 12.0:1 */
+  --on-bar-muted: #cbb1d6;    /* 7.3:1 */
+  --bar-pill: #5a3672;        /* white on it: 9.5:1 */
+  --bar-border: #8e7999;      /* 3.2:1 on bar — control boundaries */
+
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Display serif with Greek, self-hosted (no font CDN). Large sizes only. */
+  --display: 'Noto Serif Display Variable', 'Noto Serif Display', Georgia, 'Times New Roman', serif;
   --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
 
   --fs-xs: 0.8125rem;   /* 13px — metadata, never smaller */
@@ -61,6 +76,16 @@
     --seat-taken: #3b1e4d;
     --overlay: rgba(10, 4, 14, 0.65);
     --shadow-overlay: 0 12px 32px rgba(0, 0, 0, 0.5);
+
+    --gold: #dcc08a;          /* 9.4:1 on surface */
+    --gold-line: #c4a265;     /* 6.9:1 on surface */
+    --gold-soft: #43301f;     /* gold text on it: 7.1:1 */
+
+    --bar: #120818;
+    --on-bar: #f3e9f6;        /* 16.6:1 */
+    --on-bar-muted: #b8a6c4;  /* 8.7:1 */
+    --bar-pill: #3b1e4d;      /* text on it: 12.0:1 */
+    --bar-border: #6f5a7c;
   }
 }
 
@@ -88,10 +113,30 @@ body {
 }
 
 h1, h2, h3, h4 { margin: 0; line-height: 1.2; font-weight: 650; }
-h1 { font-size: var(--fs-xl); letter-spacing: -0.01em; }
-h2 { font-size: var(--fs-lg); }
+/* Headings in the display serif; everything people read at length stays in the system face. */
+h1, h2 { font-family: var(--display); font-weight: 500; letter-spacing: -0.005em; }
+h1 { font-size: 2.25rem; line-height: 1.1; }
+h2 { font-size: 1.625rem; }
 h3 { font-size: var(--fs-md); }
 p { margin: 0; }
+
+/* Large numbers and codes: times, prices, airport codes. */
+.display {
+  font-family: var(--display);
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* Small-caps eyebrow above a group: dates, sections, column heads. */
+.eyebrow {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.1em;
+}
+
+.business { color: var(--gold); }
 
 a { color: var(--accent); text-underline-offset: 0.15em; }
 
@@ -127,9 +172,9 @@ a { color: var(--accent); text-underline-offset: 0.15em; }
   width: 100%;
   max-width: var(--content);
   margin: 0 auto;
-  padding: 1.5rem var(--gutter) 3rem;
+  padding: 2.25rem var(--gutter) 4rem;
   display: grid;
-  gap: 1.5rem;
+  gap: 2rem;
   align-content: start;
 }
 
@@ -148,13 +193,15 @@ a { color: var(--accent); text-underline-offset: 0.15em; }
   background: var(--surface);
   border: 1px solid var(--hairline);
   border-radius: var(--r-card);
-  padding: 1.25rem;
+  padding: 1.5rem;
 }
 
 .section-title {
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--muted);
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.1em;
 }
 
 /* ── Buttons ────────────────────────────────────────────────────────── */
@@ -196,6 +243,14 @@ a { color: var(--accent); text-underline-offset: 0.15em; }
   color: var(--danger);
   border-color: var(--border);
 }
+
+/* Confirm button of an irreversible action, inside a dialog only. */
+.btn-destructive {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--surface);
+}
+.btn-destructive:hover { background: var(--danger); filter: brightness(1.08); }
 
 .btn-sm { min-height: 2.25rem; padding: 0 0.75rem; }
 
@@ -307,7 +362,9 @@ textarea.input { padding: 0.625rem 0.75rem; min-height: 10rem; font-family: var(
 .table th {
   text-align: left;
   font-weight: 600;
-  font-size: var(--fs-xs);
+  font-size: var(--fs-sm);
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.08em;
   color: var(--muted);
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--hairline);
