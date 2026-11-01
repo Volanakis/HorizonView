@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- "First Class" look: aubergine header, self-hosted *Noto Serif Display* (with Greek) for headings, times, prices and airport codes, small-caps eyebrows, more spacing; champagne gold reserved for Business class
+- Demo data is no longer seeded in production unless `SEED_DEMO_DATA=true`; seed flights are dated relative to today
+- Production refuses the placeholder JWT secrets from this repository; Docker Compose requires `JWT_SECRET`; the Kubernetes overlays no longer apply a placeholder Secret
+- ID number, VAT number and address are optional at sign-up
+
+### Added
+
+- Data export (`GET /api/auth/me/export`) and account deletion (`DELETE /api/auth/me`, anonymises the account) on the Account page
+- Automatic migration of older databases (`src/lib/server/db/migrations.ts`)
+
+### Fixed
+
+- A seat freed by a cancellation could never be booked again
+- `"false"` in env flags was read as true (e.g. `SHOW_RESET_TOKEN=false` printed reset tokens)
+- `npm run seed:flights` failed (missing columns, 30-seat rows)
+
 ## [1.1.0] — 2026-11-01
 
 ### Changed

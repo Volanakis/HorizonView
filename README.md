@@ -132,6 +132,7 @@ More detail: [`diagrams/architecture.md`](diagrams/architecture.md), [`diagrams/
 | 📥 **Bulk Import** | Import up to 500 users from pasted JSON or a `.json` file (Admin) |
 | 🔑 **Role Management** | Promote/demote users, activate/deactivate accounts (Admin) |
 | 📋 **Audit Log** | Filterable log of sign-ins, bookings and staff actions; entries kept 90 days (Admin) |
+| 📦 **Your Data** | Download everything stored about you as JSON, or delete your account (Account page) |
 
 ### 🛫 Flight Management
 | Feature | Description |
@@ -161,7 +162,7 @@ stateDiagram-v2
 | 🗺️ **Cabin Seat Map** | Pick a business or normal seat on a drawn cabin; economy seats are assigned automatically |
 | 💺 **Ticket Classes** | Business €450 · Normal €250 · Economy €150 |
 | 🧳 **Trips** | Upcoming and past bookings with booking reference, seat, class and price |
-| ❌ **Cancellation** | Cancel an upcoming booking; the seat is freed immediately |
+| ❌ **Cancellation** | Cancel an upcoming booking; the seat is freed immediately and can be booked again |
 
 ### 🌍 External Integrations
 | Feature | Description |
@@ -177,7 +178,9 @@ All external APIs are optional and called by the server only — the browser nev
 
 The UI follows two rules: **color, size and depth must carry meaning**, and **accessibility comes first**.
 
+- **First Class look**: an aubergine header bar, the high-contrast display serif *Noto Serif Display* (self-hosted, with Greek) for headings, times, prices and airport codes, small-caps eyebrows, and generous spacing. Body text stays in the system font for legibility.
 - **A purple palette** (`#F3E9F6` · `#CBB1D6` · `#9B78B6` · `#6C468A` · `#3B1E4D`): its lighter tints are the surfaces and its darkest shade is the text. **One flat accent** is used for the primary action, the selected seat and the current section. Other colors only mean status, and every status also has a distinct shape and a text label.
+- **Champagne gold means Business class** and nothing else: Business seats, the cabin name, and a gold rule on Business boarding passes.
 - **Airport vernacular**: airport codes, flight numbers and booking references use a monospace face, like a departures board. Two codes joined by the route line are the recurring signature. The seat map is drawn as a real cabin, with larger business seats.
 - **Hierarchy over decoration**: hairline borders instead of shadows (shadows only on dialogs and toasts), radii that shrink with the element (cards 12 px, controls 8 px, chips 6 px), tabular digits for times and prices, and dates named in every list.
 - **Accessible by default**: light and dark themes follow the system, every text pair is ≥ 4.5:1 and control borders ≥ 3:1, controls are 44 px on touch screens, there's full keyboard support with visible focus, native `<dialog>` confirmations put Cancel first, and errors appear next to the field that caused them.
@@ -193,6 +196,8 @@ The UI follows two rules: **color, size and depth must carry meaning**, and **ac
 | Control border | `#9b78b6` | `#9b78b6` | 3.7 : 1 / 4.5 : 1 |
 | Danger | `#b42318` | `#ff8a7a` | 6.6 : 1 / 7.2 : 1 |
 | Success | `#17734a` | `#5fd09b` | 5.9 : 1 / 8.7 : 1 |
+| Gold (Business only) | `#7f5f22` | `#dcc08a` | 5.9 : 1 / 9.4 : 1 |
+| Header bar text | `#f3e9f6` on `#3b1e4d` | `#f3e9f6` on `#120818` | 12.0 : 1 / 16.6 : 1 |
 
 ---
 
@@ -289,7 +294,7 @@ An empty database is seeded with these accounts, plus sample flights and booking
 | 🎫 **Customer** | `customer` | `Customer123!` | Book & cancel reservations |
 | 👀 **Visitor** | `visitor` | `Visitor123!` | Browse flights & public data |
 
-> ⚠️ **Demo credentials only** — change or remove these before any real deployment. The seed runs whenever the server starts with an empty database.
+> ⚠️ **Demo credentials only.** They're seeded when the server starts with an empty database — but not when `NODE_ENV=production`, unless you set `SEED_DEMO_DATA=true`. Flight dates are relative to the day of seeding, so there are always upcoming flights.
 
 To make another admin, see [`make-admin`](#-available-commands), or use **Users → Accounts** in the app as an admin.
 
@@ -308,12 +313,12 @@ To make another admin, see [`make-admin`](#-available-commands), or use **Users 
 | `npm test` | Build, then run Vitest (integration tests hit the built server) |
 | `npm run test:watch` | Vitest in watch mode (run `npm run build` first) |
 | `npm run test:coverage` | Build, then run Vitest with coverage |
-| `npm run migrate` | Create any missing tables, indexes and triggers (keeps existing data) |
+| `npm run migrate` | Create missing tables and indexes and upgrade older databases (keeps existing data) |
 | `npm run migrate:undo` | ⚠️ Delete the database file |
 | `npm run seed` | Seed demo users, flights and bookings (skips ones that already exist) |
 | `npm run seed:bulk` | Add bulk demo data (up to ~200 users and more flights) |
 | `npm run seed:reservations` | Add sample bookings |
-| `npm run seed:flights` | Add Greek domestic flights and seats |
+| `npm run seed:flights` | Add 20 Greek domestic flights (A320, 180 seats) over the next 10 days |
 | `npm run make-admin -- <user> [password]` | Promote a user to admin, or create one (Docker: `docker compose exec app npm run make-admin -- …`) |
 
 > `make-admin` usernames are case-sensitive, and new passwords need 8+ characters with an uppercase letter, a number and a symbol. Quote the password so the shell leaves `!` alone: `npm run make-admin -- alice 'Strong123!'`.
@@ -326,11 +331,12 @@ The server reads these from the environment, or from `.env` in the project root:
 
 | Variable | Default | Purpose |
 |:---------|:--------|:--------|
-| `JWT_SECRET` | — (**required**, ≥ 32 chars) | Signs access tokens; the server won't start without it |
+| `JWT_SECRET` | — (**required**, ≥ 32 chars) | Signs access tokens; the server won't start without it, and in production refuses the placeholders from this repo |
 | `DATABASE_URL` | `sqlite://./horizonview.db` | SQLite file (Docker: `sqlite:///app/data/horizonview.db`) |
 | `NODE_ENV` | `development` | `production` makes cookies `Secure` (HTTPS only) |
 | `ALLOWED_ORIGINS` | — | Comma-separated origins allowed to call the API cross-origin (not needed for the app itself) |
 | `SHOW_RESET_TOKEN` | `false` | Print password-reset tokens to the server log (development only) |
+| `SEED_DEMO_DATA` | `true`, except `false` in production | Seed the demo accounts into an empty database |
 | `ENABLE_EXTERNAL_VALIDATION` | `false` | Check email/phone with Mailboxlayer/Numverify at registration |
 | `WEATHERSTACK_API_KEY` · `FIXER_API_KEY` · `AVIATIONSTACK_API_KEY` · `IPSTACK_API_KEY` · `MAILBOXLAYER_API_KEY` · `NUMVERIFY_API_KEY` | — | Optional external APIs; features degrade gracefully without them |
 
@@ -478,6 +484,8 @@ All `/api` responses use `{ success, data?, error?, pagination? }` envelopes (ex
 | `POST` | `/api/auth/logout` | Auth + CSRF | Sign out; revokes the user's refresh tokens |
 | `POST` | `/api/auth/refresh` | CSRF | Rotate refresh token |
 | `GET` | `/api/auth/me` | Auth | Get current user |
+| `GET` | `/api/auth/me/export` | Auth | Download all data stored about you (JSON attachment) |
+| `DELETE` | `/api/auth/me` | Auth + CSRF | Delete (anonymise) your account — body `{ password }`; the last admin can't |
 | `PATCH` | `/api/auth/profile` | Auth + CSRF | Update profile (name, email, address, phone) or password (`currentPassword`, `newPassword`) |
 | `POST` | `/api/auth/forgot-password` | Public | Request password reset; same answer whether or not the email exists |
 | `POST` | `/api/auth/reset-password` | Public | Reset password with token |
@@ -542,7 +550,7 @@ Request and response examples: [`diagrams/api.md`](diagrams/api.md).
 | 🔍 **IDOR prevention** | Ownership verified in the service layer with the session's user id, never from the client payload |
 | 🔌 **Account deactivation** | Deactivated users are rejected on every authenticated request |
 | 📋 **Audit log** | Append-only table of auth, flight, reservation and admin events; entries older than 90 days are purged |
-| 🔐 **Privacy** | Privacy notice at `/privacy`; language comes from the browser, not an IP lookup; external APIs are never called from the browser |
+| 🔐 **Privacy** | Privacy notice at `/privacy`; self-service data export and account deletion (anonymised, upcoming bookings cancelled); ID, VAT number and address are optional at sign-up; language comes from the browser, not an IP lookup; external APIs are never called from the browser |
 | 🔗 **Behind a proxy** | Set adapter-node's `ADDRESS_HEADER=X-Forwarded-For`, `XFF_DEPTH=1` (real client IP for rate limits and the audit log) and `PROTOCOL_HEADER`/`HOST_HEADER` or `ORIGIN` |
 
 ---
@@ -558,7 +566,7 @@ docker compose exec app npm run make-admin -- <user> [password]
 docker compose down               # stop (the data volume is kept; add -v only to delete the database)
 ```
 
-- Compose reads `JWT_SECRET`, `NODE_ENV`, `ALLOWED_ORIGINS`, `SHOW_RESET_TOKEN` and `PORT` (host port) from `.env`. **Set `JWT_SECRET`** — the compose file's fallback secret is public.
+- Compose reads `JWT_SECRET` (**required** — compose stops with an error without it), `NODE_ENV`, `ALLOWED_ORIGINS`, `SHOW_RESET_TOKEN`, `SEED_DEMO_DATA` and `PORT` (host port) from `.env`.
 - The database lives in the `horizonview-data` volume at `/app/data/horizonview.db`.
 - The container reports `healthy` once `GET /api/health` answers.
 
@@ -570,7 +578,8 @@ Kustomize manifests live in `kubernetes/`: a `base` plus `staging` and `producti
 kubectl apply -k kubernetes/overlays/staging
 ```
 
-- Create the `horizonview-secret` Secret with `JWT_SECRET` (and any API keys) yourself, or via SealedSecrets/External Secrets. **Don't apply the placeholder `secrets.yaml` as-is.**
+- Create the `horizonview-secret` Secret yourself (`JWT_SECRET` and any API keys) — see `overlays/*/secrets.example.yaml` for the command. The overlays deliberately don't apply a Secret, so no placeholder can reach a cluster.
+- Production doesn't seed demo accounts; create the first admin with `kubectl exec deploy/horizonview -- npm run make-admin -- <user> '<password>'`.
 - The ConfigMap already sets the proxy headers for the ingress (`ADDRESS_HEADER`, `XFF_DEPTH`, `PROTOCOL_HEADER`, `HOST_HEADER`).
 - Argo CD applications for both environments are in `helm/argocd-apps/`.
 
@@ -588,6 +597,7 @@ JWT_SECRET=<generate a strong random string>
 ORIGIN=https://your-app.onrender.com
 ADDRESS_HEADER=X-Forwarded-For
 XFF_DEPTH=1
+SEED_DEMO_DATA=true   # only for a public demo with the demo accounts
 ```
 
 > **Note — SQLite on Render:** Render's filesystem is ephemeral. The `horizonview.db` file is wiped on every deploy or restart. The app auto-seeds demo data on an empty database, but all user accounts and reservations are lost. For persistent storage, use a persistent disk or switch to PostgreSQL.
@@ -609,6 +619,9 @@ XFF_DEPTH=1
 | `EADDRINUSE: Port 3000` | Port already in use (often a running HorizonView container) | `PORT=3001 npm start`, or stop the other process — `npm run dev` picks the next free port itself |
 | `PORT` in `.env` is ignored by `npm start` | adapter-node reads only the real environment | `PORT=3001 npm start` or `node --env-file=.env build` |
 | `JWT_SECRET must be at least 32 characters` on start | Missing/short secret | Copy `.env.example` to `.env` and set `JWT_SECRET` (`openssl rand -base64 48`) |
+| `JWT_SECRET is a placeholder from the repository` | Production with an example secret | Generate a real one: `openssl rand -base64 48` |
+| `required variable JWT_SECRET is missing` (Docker Compose) | No `JWT_SECRET` in `.env` | Add one to `.env` |
+| Empty site with no accounts in production | Demo data is off in production | `make-admin` to create an admin, or `SEED_DEMO_DATA=true` for a demo |
 | `Cannot connect to the Docker daemon` | Docker CLI points at an engine that isn't running (e.g. Docker Desktop) | `docker context ls`, then `docker context use default` (or start Docker Desktop) |
 | `ports are not available … 3000` in Docker | Another engine or container already uses port 3000 | Stop the other container, or set `PORT=3001` in `.env` for compose |
 | `service "npm" is not running` | Missing service name in `docker compose exec` | `docker compose exec app npm run …` |

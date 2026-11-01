@@ -21,7 +21,7 @@ erDiagram
         string password "bcrypt, 12 rounds"
         string name
         string vat_number UK "nullable"
-        string identity_number UK
+        string identity_number UK "nullable"
         int is_active "default 1"
         string address "nullable"
         string employee_code UK "nullable"
@@ -60,7 +60,7 @@ erDiagram
         int id PK
         int user_id FK
         int flight_id FK
-        int seat_id FK "UNIQUE"
+        int seat_id FK "one active booking per seat"
         string ticket_type "economy|normal|business"
         numeric price "snapshot at booking"
         string status "confirmed|completed|cancelled"
@@ -109,7 +109,7 @@ erDiagram
 | `password` | VARCHAR(255) | NOT NULL — bcrypt, 12 rounds |
 | `name` | VARCHAR(100) | NOT NULL |
 | `vat_number` | VARCHAR(20) | UNIQUE, nullable |
-| `identity_number` | VARCHAR(20) | UNIQUE, NOT NULL |
+| `identity_number` | VARCHAR(20) | UNIQUE, nullable — optional at sign-up |
 | `is_active` | INTEGER | NOT NULL, DEFAULT 1 |
 | `address` | TEXT | nullable |
 | `employee_code` | VARCHAR(50) | UNIQUE, nullable |
@@ -158,7 +158,7 @@ erDiagram
 | `id` | INTEGER | PK, AUTOINCREMENT |
 | `user_id` | INTEGER | FK → users(id) |
 | `flight_id` | INTEGER | FK → flights(id) |
-| `seat_id` | INTEGER | FK → seats(id), UNIQUE — one booking per seat |
+| `seat_id` | INTEGER | FK → seats(id); one non-cancelled booking per seat (partial unique index) |
 | `ticket_type` | VARCHAR(20) | CHECK `economy/normal/business` |
 | `price` | NUMERIC(10,2) | NOT NULL — snapshot at booking |
 | `status` | VARCHAR(20) | DEFAULT `'confirmed'`, CHECK `confirmed/completed/cancelled` |
@@ -213,25 +213,26 @@ erDiagram
 | `users` | `username`, `email`, `role` | login lookup, role filtering |
 | `flights` | `flight_number`, `state`, `scheduled_time` | search & date-range filtering |
 | `seats` | `flight_id`; `(flight_id, seat_number)` UNIQUE | seat-map queries |
-| `reservations` | `user_id`, `flight_id`; `seat_id` UNIQUE | user list, manifest, one-booking-per-seat |
+| `reservations` | `user_id`, `flight_id`; `seat_id` UNIQUE `WHERE status <> 'cancelled'` | user list, manifest, one active booking per seat (cancelled seats can be re-booked) |
 | `refresh_tokens` | `user_id`, `token_hash` | refresh lookup, revoke-all |
 | `password_reset_tokens` | `token_hash` | reset lookup |
 | `audit_log` | `user_id` | per-user history and action-based queries |
 
-## Triggers
+## Housekeeping and migrations
 
-The schema defines four triggers for automatic housekeeping:
+There are no triggers. Housekeeping runs when the server starts (`hooks.server.ts`):
 
-| Trigger | Event | Action |
-|:--------|:------|:-------|
-| `update_updated_at` | `UPDATE` on `users` | Sets `updated_at = CURRENT_TIMESTAMP` |
-| `clean_old_refresh_tokens` | `INSERT` on `refresh_tokens` | Deletes expired/revoked refresh tokens |
-| `clean_old_reset_tokens` | `INSERT` on `password_reset_tokens` | Deletes expired/used password reset tokens |
-| `clean_audit_logs` | `INSERT` on `audit_log` | Deletes audit log entries older than 90 days |
+| Step | Action |
+|:-----|:-------|
+| Token cleanup | Deletes expired or revoked refresh tokens and used or expired password-reset tokens |
+| Audit retention | Deletes audit log entries older than 90 days |
+| Demo data | Seeds demo accounts, flights and bookings into an empty database (not in production unless `SEED_DEMO_DATA=true`) |
+
+`src/lib/server/db/migrations.ts` upgrades databases created by older versions when they are opened: it rebuilds `reservations` (old table-level `UNIQUE(seat_id)`, which kept cancelled seats blocked) and `users` (old `identity_number NOT NULL`). Each step checks the stored schema first, so it only ever runs once.
 
 ## Concurrency: Seat Booking Transaction
 
-SQLite serializes write transactions, so there is no `SELECT ... FOR UPDATE`. The service wraps the read-check-write in a **synchronous `better-sqlite3` transaction** and re-checks availability before flipping the flag — `seat_id UNIQUE` on `reservations` is the final backstop.
+SQLite serializes write transactions, so there is no `SELECT ... FOR UPDATE`. The service wraps the read-check-write in a **synchronous `better-sqlite3` transaction** and re-checks availability before flipping the flag — the partial unique index on `reservations(seat_id)` (non-cancelled bookings only) is the final backstop.
 
 ```mermaid
 sequenceDiagram
